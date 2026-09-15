@@ -4,12 +4,70 @@ Rede social para quem está em jornada de despertar espiritual encontrar
 outras pessoas na mesma caminhada. Slogan: **"Onde quem está despertando
 se encontra."**
 
-## Status: Etapas 1 a 5 concluídas — o app inteiro roda com dados reais
+## Status: as 6 etapas concluídas — pronto pra revisão final e deploy
 
-Não existe mais nenhum dado fictício no projeto: `lib/mock-data.ts` foi
-**removido**. Feed, mesas, pessoas, busca, comentários, enquetes,
-mensagens e notificações vêm todos do Supabase. Falta só a Etapa 6
-(produção: moderação, políticas, deploy).
+Todas as etapas do plano original estão implementadas e testadas: frontend
+componentizado, schema completo do Supabase, autenticação real, mensagens/
+notificações em tempo real, feed com ranking + Gemini, e agora moderação de
+verdade, Guardados, páginas legais e ajustes de produção.
+
+## Etapa 6 — Produção
+
+### Moderação de verdade
+
+Denunciar, bloquear e ocultar deixaram de ser só um toast — agora gravam
+no banco e mudam o que a conta vê:
+
+| Ação | O que acontece |
+|---|---|
+| **Ocultar** | Some só do SEU feed (`posts_ocultos`). Não afeta mais ninguém. |
+| **Bloquear** | Mútuo: nem você vê o conteúdo da pessoa, nem ela vê o seu, em feed, busca, sugestões e mensagens. Gerenciável em Perfil → "Pessoas bloqueadas", com botão de desbloquear. |
+| **Denunciar** | Grava motivo (spam, ódio, assédio, imprópria, outro) + detalhe opcional. Só quem denunciou (e a equipe, com uma role própria — fora do escopo deste MVP) consegue ver a denúncia. |
+
+Testei tudo isso contra Postgres de verdade, incluindo os casos que
+importam: post de quem foi bloqueado some do feed mas **a pessoa
+bloqueada continua enxergando o próprio conteúdo normalmente**; tentar
+iniciar conversa com quem bloqueou (ou foi bloqueado) falha; busca e
+sugestão de pessoas não trazem quem está bloqueado; e ocultar um post
+não afeta o feed de mais ninguém além de quem ocultou.
+
+### Guardados
+
+Funciona de verdade agora — ícone de guardar em cada post, RPC
+`listar_meus_salvos()`, com estado (`eu_salvei`) refletido em qualquer
+lugar que o post apareça (feed, mesa, perfil).
+
+### Trava simples contra spam
+
+`criar_post()` recusa uma segunda publicação da mesma pessoa antes de
+15 segundos. Não é um sistema de rate-limit sofisticado, mas cobre o
+caso mais óbvio de abuso a custo zero de infraestrutura.
+
+### PWA e produção
+
+- `app/manifest.ts`, `app/icon.tsx`, `app/apple-icon.tsx` — ícones gerados
+  na hora (via `next/og`), sem precisar de nenhum arquivo de imagem
+  externo; o app já é instalável ("Adicionar à tela de início").
+- `app/robots.ts` — só libera indexação das páginas públicas (`/`,
+  `/termos`, `/privacidade`); tudo que exige login fica de fora.
+- `next.config.ts` — headers de segurança padrão (`X-Frame-Options`,
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`).
+- `app/termos` e `app/privacidade` — páginas reais, linkadas no rodapé
+  da coluna direita.
+
+### O que ainda fica pra depois (de propósito, fora do escopo de um MVP)
+
+- **Painel de moderação para equipe/staff**: hoje as denúncias ficam
+  registradas e visíveis só pra quem denunciou. Revisar e agir sobre
+  elas exigiria uma *role* de moderador (RLS específico) e uma tela — dá
+  pra construir em cima do que já existe quando houver equipe de verdade.
+- **Upload de foto/vídeo**: os botões existem no composer, mas landing
+  de mídia precisa do Supabase Storage (bucket + política de upload).
+- **Criar grupo** de mensagens pela interface: o schema já suporta desde
+  a Etapa 4, só falta o botão.
+- **Rate limiting de verdade** (por IP/conta, na borda): a trava de 15s
+  em `criar_post` cobre o básico; produção séria normalmente usa algo
+  como Vercel Firewall ou Upstash Ratelimit na frente da API.
 
 ## Etapa 5 — Algoritmo do feed & Gemini
 
@@ -181,6 +239,7 @@ desde a criação — nada fica aberto por padrão.
 | `0011_notificacoes_rpc.sql` | (Etapa 4) RPCs de notificações |
 | `0012_feed.sql` | (Etapa 5) Ranking do feed, posts por perfil/mesa, opções de enquete com %, `criar_post` |
 | `0013_descoberta.sql` | (Etapa 5) Mesas, membros, pessoas sugeridas, busca, "em alta", comentários |
+| `0014_moderacao_e_salvos.sql` | (Etapa 6) Bloqueios, denúncias, posts ocultos, Guardados, trava de spam |
 
 `supabase/seed.sql` já povoa as 5 mesas do protótipo. Perfis e posts de
 teste só podem ser criados depois que existir pelo menos um usuário real
@@ -236,7 +295,7 @@ components/                → Sidebar, MobileNav, RightRail, PostCard, MesaCard
                               PersonRow, ComposeModal, OnboardingFlow, Mensagens,
                               CompletarCadastro, Toast, Avatar, icons.tsx
 context/AuthContext.tsx        → sessão, perfil real, reivindicar conta
-context/AppContext.tsx         → feed mockado (posts, mesas, toasts, composer)
+context/AppContext.tsx         → feed, mesas, moderação e guardados reais
 context/MensagensContext.tsx   → conversas e mensagens reais + Realtime
 context/NotificacoesContext.tsx→ notificações reais + Realtime
 context/PresenceContext.tsx    → quem está online agora
@@ -246,23 +305,28 @@ lib/gemini.ts                  → chamadas ao Gemini (server-only)
 lib/constantes.ts              → temas do onboarding
 lib/types.ts                   → tipos TypeScript compartilhados
 app/api/gemini/                → rotas de IA (resumo, sugerir-mesas)
-supabase/migrations/           → 13 migrations SQL, na ordem de aplicação
+app/termos, app/privacidade    → páginas legais
+app/manifest.ts, icon.tsx      → PWA
+supabase/migrations/           → 14 migrations SQL, na ordem de aplicação
 supabase/seed.sql              → as 5 mesas iniciais
 ```
 
-## Próxima etapa
+## Checklist antes de lançar de verdade
 
-- **Etapa 6 — Produção:** moderação de verdade (hoje os botões de
-  denunciar/bloquear só mostram um aviso, não gravam nada), política de
-  privacidade e termos, deploy no Vercel, ajustes de PWA/mobile e
-  lançamento.
+- [ ] Rodar as 14 migrations + `seed.sql`, nessa ordem, no projeto Supabase de produção
+- [ ] Ativar Anonymous Sign-Ins e configurar o provider Google (ver seção de Autenticação acima)
+- [ ] Adicionar as Redirect URLs de produção em Authentication → URL Configuration
+- [ ] Configurar SMTP próprio (o e-mail padrão do Supabase é limitado)
+- [ ] Preencher `GEMINI_API_KEY` na Vercel, se quiser resumo/sugestões por IA
+- [ ] Revisar `app/termos` e `app/privacidade` com um advogado antes do lançamento público
+- [ ] Definir um canal de contato real (e-mail/formulário) e substituir a menção genérica nas páginas legais
+- [ ] Decidir quem revisa as denúncias (`select * from denuncias where status = 'pendente'`) até existir um painel de moderação
 
-### O que ainda é "de mentirinha" na interface
+### O que fica pra depois, de propósito (fora do escopo deste MVP)
 
-Pra não haver surpresa depois:
-- **Denunciar / bloquear / ocultar**: só mostram um toast. Nada é gravado.
-- **Guardados**: a tela existe, mas salvar post ainda não foi implementado.
-- **Foto e vídeo** no composer: os botões existem, mas upload não está
-  ligado (precisa do Supabase Storage).
-- **Criar grupo** de mensagens: o schema suporta, a interface ainda não tem
-  o botão.
+- **Painel de moderação para equipe/staff** — hoje as denúncias ficam
+  registradas e visíveis só pra quem denunciou.
+- **Upload de foto/vídeo** — os botões existem, falta o Supabase Storage.
+- **Criar grupo** de mensagens pela interface — o schema já suporta.
+- **Rate limiting na borda** (Vercel Firewall / Upstash) — a trava de 15s
+  em `criar_post` cobre só o caso mais básico.

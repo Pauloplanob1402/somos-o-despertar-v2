@@ -53,7 +53,9 @@ export function RightRail() {
         </div>
       ) : null}
 
-      <div className="rodape-rail">Despertar © 2027</div>
+      <div className="rodape-rail">
+        Despertar © 2027 · <Link href="/termos">Termos</Link> · <Link href="/privacidade">Privacidade</Link>
+      </div>
     </aside>
   );
 }

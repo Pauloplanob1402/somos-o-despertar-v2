@@ -9,6 +9,7 @@ import type { Post } from "@/lib/types";
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
 import { CompletarCadastro } from "@/components/CompletarCadastro";
+import { PessoasBloqueadas } from "@/components/PessoasBloqueadas";
 
 type Aba = "publicacoes" | "mesas";
 
@@ -115,6 +116,10 @@ export default function PerfilPage() {
 
       <div style={{ margin: "0 22px 20px" }}>
         <CompletarCadastro />
+      </div>
+
+      <div style={{ margin: "0 22px 20px" }}>
+        <PessoasBloqueadas />
       </div>
 
       <div className="abas">

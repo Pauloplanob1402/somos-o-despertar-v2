@@ -31,6 +31,7 @@ type LinhaPost = {
   comentarios_count: number;
   eu_curti: boolean;
   minha_opcao_id: string | null;
+  eu_salvei: boolean;
   criado_em: string;
 };
 
@@ -52,6 +53,7 @@ export function mapearPost(l: LinhaPost): Post {
     comentariosCount: l.comentarios_count,
     euCurti: l.eu_curti,
     minhaOpcaoId: l.minha_opcao_id,
+    euSalvei: l.eu_salvei,
     criadoEm: l.criado_em,
   };
 }

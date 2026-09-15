@@ -402,6 +402,8 @@ input, textarea { font-family: inherit; }
 .acao-post:hover { color: var(--primaria); }
 .acao-post.curtido { color: #E0245E; }
 .acao-post.curtido svg { fill: #E0245E; }
+.acao-post.salvo { color: var(--primaria); }
+.acao-post.salvo svg { fill: var(--primaria); }
 .acao-post .curtir-anim { transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); }
 .acao-post.acabou-curtir .curtir-anim { transform: scale(1.35); }
 
@@ -515,6 +517,7 @@ input, textarea { font-family: inherit; }
 .ver-todas { color: var(--primaria); font-weight: 700; font-size: 13.5px; display: block; margin-top: 6px; }
 
 .rodape-rail { padding: 0 6px; color: var(--texto-fraco); font-size: 12px; line-height: 1.7; }
+.rodape-rail a:hover { text-decoration: underline; }
 
 /* Botões genéricos ---------------------------------------------------------*/
 .botao-seguir {

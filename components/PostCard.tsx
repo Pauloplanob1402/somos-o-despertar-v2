@@ -1,18 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type MotivoDenuncia } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { tempoRelativo } from "@/lib/mapeadores";
 import type { Post } from "@/lib/types";
 import { Avatar } from "./Avatar";
 import { ComentariosDoPost } from "./ComentariosDoPost";
-import { IconCoracao, IconComentar, IconCompartilhar, IconMais } from "./icons";
+import { IconCoracao, IconComentar, IconCompartilhar, IconMais, IconSalvos } from "./icons";
+
+const MOTIVOS: { valor: MotivoDenuncia; label: string }[] = [
+  { valor: "spam", label: "Spam ou propaganda" },
+  { valor: "odio", label: "Discurso de ódio" },
+  { valor: "assedio", label: "Assédio ou ameaça" },
+  { valor: "impropria", label: "Conteúdo impróprio" },
+  { valor: "outro", label: "Outro motivo" },
+];
 
 export function PostCard({ post }: { post: Post }) {
-  const { curtirPost, votarEnquete, mostrarToast } = useApp();
+  const { curtirPost, votarEnquete, alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, mostrarToast } = useApp();
   const { perfil } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [motivosAbertos, setMotivosAbertos] = useState(false);
   const [curtindoAnim, setCurtindoAnim] = useState(false);
   const [comentariosAbertos, setComentariosAbertos] = useState(false);
 
@@ -25,14 +34,14 @@ export function PostCard({ post }: { post: Post }) {
     setTimeout(() => setCurtindoAnim(false), 250);
   }
 
-  function handleAcaoMenu(acao: "ocultar" | "denunciar" | "bloquear") {
-    const textos = {
-      ocultar: "Publicação ocultada",
-      denunciar: "Denúncia enviada. Nossa equipe vai revisar.",
-      bloquear: "Autor bloqueado",
-    };
-    mostrarToast(textos[acao]);
+  function fecharMenu() {
     setMenuAberto(false);
+    setMotivosAbertos(false);
+  }
+
+  function handleDenunciar(motivo: MotivoDenuncia) {
+    denunciarPost(post.id, motivo);
+    fecharMenu();
   }
 
   function handleCompartilhar() {
@@ -52,25 +61,46 @@ export function PostCard({ post }: { post: Post }) {
           <span className="arroba">@{post.autorArroba}</span>
           <span className="tempo">· {tempoRelativo(post.criadoEm)}</span>
           {post.mesaNome ? (
-            <span className="tempo">
-              · em {post.mesaEmoji} {post.mesaNome}
-            </span>
+            <span className="tempo">· em {post.mesaEmoji} {post.mesaNome}</span>
           ) : null}
+
           <div style={{ position: "relative", marginLeft: "auto" }}>
             <button className="post-mais" onClick={() => setMenuAberto((v) => !v)}>
               <IconMais />
             </button>
             {menuAberto ? (
               <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 110 }} onClick={() => setMenuAberto(false)} />
-                <div className="menu-contexto" style={{ top: "100%", right: 0, left: "auto" }}>
-                  <button onClick={() => handleAcaoMenu("ocultar")}>Ocultar publicação</button>
-                  {!souEuOAutor ? (
+                <div style={{ position: "fixed", inset: 0, zIndex: 110 }} onClick={fecharMenu} />
+                <div className="menu-contexto" style={{ top: "100%", right: 0, left: "auto", minWidth: 210 }}>
+                  {!motivosAbertos ? (
                     <>
-                      <button className="perigo" onClick={() => handleAcaoMenu("denunciar")}>Denunciar</button>
-                      <button className="perigo" onClick={() => handleAcaoMenu("bloquear")}>Bloquear autor</button>
+                      <button onClick={() => { alternarSalvarPost(post.id); fecharMenu(); }}>
+                        {post.euSalvei ? "Remover dos guardados" : "Guardar"}
+                      </button>
+                      <button onClick={() => { ocultarPost(post.id); fecharMenu(); }}>
+                        Ocultar publicação
+                      </button>
+                      {!souEuOAutor ? (
+                        <>
+                          <button className="perigo" onClick={() => setMotivosAbertos(true)}>
+                            Denunciar
+                          </button>
+                          <button
+                            className="perigo"
+                            onClick={() => { bloquearPessoa(post.autorId); fecharMenu(); }}
+                          >
+                            Bloquear @{post.autorArroba}
+                          </button>
+                        </>
+                      ) : null}
                     </>
-                  ) : null}
+                  ) : (
+                    MOTIVOS.map((m) => (
+                      <button key={m.valor} onClick={() => handleDenunciar(m.valor)}>
+                        {m.label}
+                      </button>
+                    ))
+                  )}
                 </div>
               </>
             ) : null}
@@ -130,6 +160,13 @@ export function PostCard({ post }: { post: Post }) {
           </button>
           <button className="acao-post" onClick={handleCompartilhar}>
             <IconCompartilhar /><span>Compartilhar</span>
+          </button>
+          <button
+            className={`acao-post ${post.euSalvei ? "salvo" : ""}`}
+            onClick={() => alternarSalvarPost(post.id)}
+            title={post.euSalvei ? "Remover dos guardados" : "Guardar"}
+          >
+            <IconSalvos />
           </button>
         </div>
 

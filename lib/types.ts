@@ -35,6 +35,7 @@ export interface Post {
   comentariosCount: number;
   euCurti: boolean;
   minhaOpcaoId: string | null;
+  euSalvei: boolean;
   criadoEm: string;
   /** preenchido só para posts de enquete */
   opcoes?: OpcaoEnquete[];

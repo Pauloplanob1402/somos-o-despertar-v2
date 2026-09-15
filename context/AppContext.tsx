@@ -20,6 +20,8 @@ import {
 } from "@/lib/mapeadores";
 import type { EmAlta, Mesa, Post } from "@/lib/types";
 
+export type MotivoDenuncia = "spam" | "odio" | "assedio" | "impropria" | "outro";
+
 interface AppContextValue {
   // feed
   posts: Post[];
@@ -44,6 +46,13 @@ interface AppContextValue {
 
   // seguir pessoas
   alternarSeguirPessoa: (id: string, seguindoAgora: boolean) => Promise<void>;
+
+  // moderação e guardados
+  alternarSalvarPost: (id: string) => Promise<void>;
+  ocultarPost: (id: string) => Promise<void>;
+  bloquearPessoa: (autorId: string) => Promise<void>;
+  denunciarPost: (postId: string, motivo: MotivoDenuncia) => Promise<void>;
+  denunciarPessoa: (usuarioId: string, motivo: MotivoDenuncia) => Promise<void>;
 
   // ui
   toast: string | null;
@@ -256,6 +265,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [user, supabase, mostrarToast, recarregarFeed]
   );
 
+  const alternarSalvarPost = useCallback(
+    async (id: string) => {
+      if (!user) return;
+      const alvo = posts.find((p) => p.id === id);
+      if (!alvo) return;
+      const jaSalvo = alvo.euSalvei;
+
+      setPosts((atual) => atual.map((p) => (p.id === id ? { ...p, euSalvei: !jaSalvo } : p)));
+
+      const { error } = jaSalvo
+        ? await supabase.from("salvos").delete().eq("post_id", id).eq("usuario_id", user.id)
+        : await supabase.from("salvos").insert({ post_id: id, usuario_id: user.id });
+
+      if (error) {
+        setPosts((atual) => atual.map((p) => (p.id === id ? { ...p, euSalvei: jaSalvo } : p)));
+        mostrarToast("Não deu pra atualizar os guardados.");
+        return;
+      }
+      mostrarToast(jaSalvo ? "Removido dos guardados" : "Guardado");
+    },
+    [posts, user, supabase, mostrarToast]
+  );
+
+  /** Some do MEU feed só — não afeta ninguém mais. */
+  const ocultarPost = useCallback(
+    async (id: string) => {
+      if (!user) return;
+      setPosts((atual) => atual.filter((p) => p.id !== id));
+      const { error } = await supabase.from("posts_ocultos").insert({ usuario_id: user.id, post_id: id });
+      if (error) mostrarToast("Não deu pra ocultar agora.");
+      else mostrarToast("Publicação ocultada");
+    },
+    [user, supabase, mostrarToast]
+  );
+
+  /** Bloqueio é mútuo: some tudo dessa pessoa do meu feed na hora. */
+  const bloquearPessoa = useCallback(
+    async (autorId: string) => {
+      if (!user) return;
+      setPosts((atual) => atual.filter((p) => p.autorId !== autorId));
+      const { error } = await supabase.from("bloqueios").insert({ bloqueador_id: user.id, bloqueado_id: autorId });
+      if (error) mostrarToast("Não deu pra bloquear agora.");
+      else mostrarToast("Pessoa bloqueada");
+    },
+    [user, supabase, mostrarToast]
+  );
+
+  const denunciarPost = useCallback(
+    async (postId: string, motivo: MotivoDenuncia) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from("denuncias")
+        .insert({ denunciante_id: user.id, post_id: postId, motivo });
+      mostrarToast(error ? "Não deu pra enviar a denúncia." : "Denúncia enviada. Nossa equipe vai revisar.");
+    },
+    [user, supabase, mostrarToast]
+  );
+
+  const denunciarPessoa = useCallback(
+    async (usuarioId: string, motivo: MotivoDenuncia) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from("denuncias")
+        .insert({ denunciante_id: user.id, usuario_denunciado_id: usuarioId, motivo });
+      mostrarToast(error ? "Não deu pra enviar a denúncia." : "Denúncia enviada. Nossa equipe vai revisar.");
+    },
+    [user, supabase, mostrarToast]
+  );
+
   const abrirComposer = useCallback(() => setComposerAberto(true), []);
   const fecharComposer = useCallback(() => setComposerAberto(false), []);
 
@@ -265,6 +343,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mesas, carregandoMesas, alternarParticiparMesa,
       emAlta,
       alternarSeguirPessoa,
+      alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, denunciarPessoa,
       toast, mostrarToast, composerAberto, abrirComposer, fecharComposer,
     }),
     [
@@ -272,6 +351,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mesas, carregandoMesas, alternarParticiparMesa,
       emAlta,
       alternarSeguirPessoa,
+      alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, denunciarPessoa,
       toast, mostrarToast, composerAberto, abrirComposer, fecharComposer,
     ]
   );
