@@ -63,22 +63,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let ativo = true;
 
     async function iniciar() {
-      try {
-        const {
-          data: { user: usuarioAtual },
-        } = await supabase.auth.getUser();
-        if (!ativo) return;
-        setUser(usuarioAtual);
-        if (usuarioAtual) await buscarPerfil(usuarioAtual.id);
-      } catch (e) {
-        // Sem isso, qualquer falha aqui (rede, projeto Supabase mal
-        // configurado, etc.) deixava a tela travada em "carregando"
-        // pra sempre, sem nenhum aviso — o setCarregando(false) nunca
-        // era alcançado porque a função tinha lançado uma exceção antes.
-        console.error("Falha ao iniciar sessão:", e);
-      } finally {
-        if (ativo) setCarregando(false);
-      }
+      const {
+        data: { user: usuarioAtual },
+      } = await supabase.auth.getUser();
+      if (!ativo) return;
+      setUser(usuarioAtual);
+      if (usuarioAtual) await buscarPerfil(usuarioAtual.id);
+      if (ativo) setCarregando(false);
     }
     iniciar();
 
