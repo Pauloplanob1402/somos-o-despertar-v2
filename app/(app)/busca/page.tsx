@@ -1,46 +1,41 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { USUARIOS } from "@/lib/mock-data";
-import { useApp } from "@/context/AppContext";
-import { PostCard } from "@/components/PostCard";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { mapearBusca } from "@/lib/mapeadores";
+import type { ResultadoBusca } from "@/lib/types";
+import { Avatar } from "@/components/Avatar";
 import { IconBuscar } from "@/components/icons";
 
 export default function BuscaPage() {
-  const { mesas, posts } = useApp();
   const [termo, setTermo] = useState("");
-  const termoLimpo = termo.trim().toLowerCase();
+  const [resultados, setResultados] = useState<ResultadoBusca[]>([]);
+  const [buscando, setBuscando] = useState(false);
 
-  const mesasEncontradas = useMemo(
-    () =>
-      termoLimpo
-        ? mesas.filter(
-            (c) => c.nome.toLowerCase().includes(termoLimpo) || c.categoria.toLowerCase().includes(termoLimpo)
-          )
-        : [],
-    [mesas, termoLimpo]
-  );
+  useEffect(() => {
+    const limpo = termo.trim();
+    if (limpo.length < 2) {
+      setResultados([]);
+      return;
+    }
+    let ativo = true;
+    setBuscando(true);
+    const t = setTimeout(async () => {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("buscar", { termo: limpo });
+      if (ativo) {
+        setResultados(data ? (data as Parameters<typeof mapearBusca>[0][]).map(mapearBusca) : []);
+        setBuscando(false);
+      }
+    }, 300);
+    return () => { ativo = false; clearTimeout(t); };
+  }, [termo]);
 
-  const pessoasEncontradas = useMemo(
-    () =>
-      termoLimpo
-        ? USUARIOS.filter(
-            (u) => u.nome.toLowerCase().includes(termoLimpo) || u.bio.toLowerCase().includes(termoLimpo)
-          )
-        : [],
-    [termoLimpo]
-  );
-
-  const postsEncontrados = useMemo(
-    () =>
-      termoLimpo
-        ? posts.filter((p) => p.texto && p.texto.toLowerCase().includes(termoLimpo))
-        : [],
-    [posts, termoLimpo]
-  );
-
-  const semResultado =
-    !!termoLimpo && !mesasEncontradas.length && !pessoasEncontradas.length && !postsEncontrados.length;
+  const pessoas = resultados.filter((r) => r.tipoResultado === "pessoa");
+  const mesas = resultados.filter((r) => r.tipoResultado === "mesa");
+  const posts = resultados.filter((r) => r.tipoResultado === "post");
+  const vazio = termo.trim().length >= 2 && !buscando && resultados.length === 0;
 
   return (
     <section className="view">
@@ -56,55 +51,57 @@ export default function BuscaPage() {
         </div>
       </div>
 
-      {!termoLimpo ? (
+      {termo.trim().length < 2 ? (
         <div className="busca-vazio">Pesquise por pessoas, mesas ou assuntos.</div>
-      ) : semResultado ? (
+      ) : buscando ? (
+        <div className="busca-vazio">Buscando…</div>
+      ) : vazio ? (
         <div className="busca-vazio">Nenhum resultado para &quot;{termo}&quot;</div>
       ) : (
         <div>
-          {mesasEncontradas.length ? (
+          {mesas.length > 0 ? (
             <div className="busca-secao">
               <h4>Mesas</h4>
-              {mesasEncontradas.map((c) => (
-                <div className="comunidade-linha" key={c.id}>
-                  <div className="comunidade-emoji" style={{ background: c.cor + "22" }}>{c.emoji}</div>
+              {mesas.map((m) => (
+                <Link href={`/mesas/${m.id}`} className="comunidade-linha" key={m.id}>
+                  <div className="comunidade-emoji" style={{ background: (m.cor ?? "#B8663F") + "22" }}>{m.emoji}</div>
                   <div className="comunidade-linha-info">
-                    <div className="nome">{c.nome}</div>
-                    <div className="membros">{c.membros} membros</div>
+                    <div className="nome">{m.titulo}</div>
+                    <div className="membros">{m.subtitulo}</div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : null}
 
-          {pessoasEncontradas.length ? (
+          {pessoas.length > 0 ? (
             <div className="busca-secao">
               <h4>Pessoas</h4>
-              {pessoasEncontradas.map((u) => (
-                <div className="linha-pessoa" key={u.id}>
-                  <div
-                    className="avatar"
-                    style={{
-                      width: 42, height: 42, background: u.cor, display: "flex",
-                      alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700,
-                    }}
-                  >
-                    {u.iniciais}
-                  </div>
+              {pessoas.map((p) => (
+                <div className="linha-pessoa" key={p.id}>
+                  <Avatar nome={p.titulo} cor={p.cor ?? "#B8663F"} tamanho={42} />
                   <div className="linha-pessoa-info">
-                    <div className="nome">{u.nome}</div>
-                    <div className="arroba">@{u.arroba}</div>
+                    <div className="nome">{p.titulo}</div>
+                    <div className="arroba">{p.subtitulo}</div>
+                    {p.detalhe ? <div className="bio">{p.detalhe}</div> : null}
                   </div>
-                  <button className="botao-mini">Seguir</button>
                 </div>
               ))}
             </div>
           ) : null}
 
-          {postsEncontrados.length ? (
+          {posts.length > 0 ? (
             <div className="busca-secao">
               <h4>Publicações</h4>
-              {postsEncontrados.map((p) => <PostCard key={p.id} post={p} />)}
+              {posts.map((p) => (
+                <div className="linha-pessoa" key={p.id}>
+                  <Avatar nome={p.titulo} cor={p.cor ?? "#B8663F"} tamanho={42} />
+                  <div className="linha-pessoa-info">
+                    <div className="nome">{p.titulo} <span style={{ fontWeight: 400, color: "var(--texto-fraco)" }}>{p.subtitulo}</span></div>
+                    <div className="bio">{p.detalhe}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : null}
         </div>

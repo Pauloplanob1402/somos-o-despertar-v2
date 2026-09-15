@@ -1,90 +1,128 @@
-export interface Usuario {
+// =====================================================================
+// Tipos compartilhados. A partir da Etapa 5 tudo aqui reflete o que vem
+// do Supabase — não há mais tipos "mock".
+// =====================================================================
+
+export interface PerfilResumo {
   id: string;
   nome: string;
   arroba: string;
-  iniciais: string;
   cor: string;
-  online: boolean;
-  bio: string;
-}
-
-export interface EuUsuario {
-  id: "eu";
-  nome: string;
-  arroba: string;
-  iniciais: string;
-  cor: string;
-  bio: string;
-  seguidores: number;
-  seguindo: number;
-  publicacoes: number;
-}
-
-export interface Mesa {
-  id: string;
-  emoji: string;
-  nome: string;
-  membros: string;
-  cor: string;
-  categoria: string;
-  descricao: string;
-  seguindo: boolean;
 }
 
 export interface OpcaoEnquete {
+  opcaoId: string;
   texto: string;
+  ordem: number;
+  votos: number;
   pct: number;
 }
 
 export interface Post {
   id: string;
-  autor: string; // id de Usuario ou 'eu'
-  tempo: string;
-  texto?: string;
-  curtidas: number;
-  comentarios: number;
-  curtido: boolean;
-  imagem?: { cor1: string; cor2: string; texto: string };
-  tipo?: "enquete";
-  pergunta?: string;
+  autorId: string;
+  autorNome: string;
+  autorArroba: string;
+  autorCor: string;
+  mesaId: string | null;
+  mesaNome: string | null;
+  mesaEmoji: string | null;
+  tipo: "texto" | "enquete";
+  texto: string | null;
+  pergunta: string | null;
+  imagemUrl: string | null;
+  curtidasCount: number;
+  comentariosCount: number;
+  euCurti: boolean;
+  minhaOpcaoId: string | null;
+  criadoEm: string;
+  /** preenchido só para posts de enquete */
   opcoes?: OpcaoEnquete[];
-  votos?: string;
-  votada?: boolean;
-  opcaoVotada?: number;
 }
 
-export interface Mensagem {
-  de: string; // id de Usuario ou 'eu'
-  texto: string;
-  tempo: string;
-}
-
-export interface Conversa {
+export interface Mesa {
   id: string;
-  tipo: "pessoa" | "grupo";
-  com?: string; // id do usuário, se tipo === 'pessoa'
-  nome?: string; // nome do grupo, se tipo === 'grupo'
-  emoji?: string;
-  membros?: string[];
-  naoLidas: number;
-  mensagens: Mensagem[];
-}
-
-export interface Notificacao {
-  icone: string;
+  nome: string;
+  emoji: string;
+  descricao: string;
+  categoria: string;
   cor: string;
-  texto: string; // HTML simples com <b>
-  tempo: string;
-  lida: boolean;
+  membrosCount: number;
+  euParticipo: boolean;
+  amigosNaMesa: number;
 }
 
-export type ViewId =
-  | "inicio"
-  | "explorar"
-  | "mesas"
-  | "pessoas"
-  | "mensagens"
-  | "notificacoes"
-  | "guardados"
-  | "perfil"
-  | "busca";
+export interface PessoaSugerida {
+  id: string;
+  nome: string;
+  arroba: string;
+  bio: string;
+  cor: string;
+  seguidoresCount: number;
+  amigosEmComum: number;
+  euSigo?: boolean;
+}
+
+export interface Comentario {
+  id: string;
+  autorId: string;
+  autorNome: string;
+  autorArroba: string;
+  autorCor: string;
+  texto: string;
+  criadoEm: string;
+}
+
+export interface ResultadoBusca {
+  tipoResultado: "pessoa" | "mesa" | "post";
+  id: string;
+  titulo: string;
+  subtitulo: string | null;
+  detalhe: string | null;
+  cor: string | null;
+  emoji: string | null;
+}
+
+export interface EmAlta {
+  categoria: string;
+  postsCount: number;
+}
+
+// ------------------------- Mensagens (Etapa 4) -------------------------
+
+export interface ConversaResumo {
+  conversaId: string;
+  tipo: "pessoa" | "grupo";
+  nome: string | null;
+  emoji: string | null;
+  outroId: string | null;
+  outroNome: string | null;
+  outroArroba: string | null;
+  outroCor: string | null;
+  ultimaMensagem: string | null;
+  ultimaMensagemEm: string | null;
+  ultimaMensagemAutorId: string | null;
+  naoLidas: number;
+}
+
+export interface MensagemReal {
+  id: string;
+  conversaId: string;
+  autorId: string;
+  texto: string;
+  criadoEm: string;
+}
+
+export interface NotificacaoReal {
+  id: string;
+  tipo: "curtida" | "comentario" | "seguidor" | "convite_mesa" | "mensagem";
+  atorId: string | null;
+  atorNome: string | null;
+  atorArroba: string | null;
+  atorCor: string | null;
+  postId: string | null;
+  mesaId: string | null;
+  mesaNome: string | null;
+  lida: boolean;
+  criadoEm: string;
+}

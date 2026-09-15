@@ -1,23 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import type { Usuario } from "@/lib/types";
+import { useApp } from "@/context/AppContext";
+import type { PessoaSugerida } from "@/lib/types";
 import { Avatar } from "./Avatar";
 
-export function PersonRow({ usuario, comBio = true }: { usuario: Usuario; comBio?: boolean }) {
-  const [seguindo, setSeguindo] = useState(false);
+export function PersonRow({ pessoa, comBio = true }: { pessoa: PessoaSugerida; comBio?: boolean }) {
+  const { alternarSeguirPessoa } = useApp();
+  const [seguindo, setSeguindo] = useState(pessoa.euSigo ?? false);
+  const [ocupado, setOcupado] = useState(false);
+
+  async function handleSeguir() {
+    setOcupado(true);
+    const anterior = seguindo;
+    setSeguindo(!anterior);
+    await alternarSeguirPessoa(pessoa.id, anterior);
+    setOcupado(false);
+  }
+
   return (
     <div className="linha-pessoa">
-      <Avatar nome={usuario.nome} iniciais={usuario.iniciais} cor={usuario.cor} tamanho={comBio ? 48 : 42} />
+      <Avatar nome={pessoa.nome} cor={pessoa.cor} tamanho={comBio ? 48 : 42} />
       <div className="linha-pessoa-info">
-        <div className="nome">{usuario.nome}</div>
-        <div className="arroba">@{usuario.arroba}</div>
-        {comBio ? <div className="bio">{usuario.bio}</div> : null}
+        <div className="nome">{pessoa.nome}</div>
+        <div className="arroba">@{pessoa.arroba}</div>
+        {comBio && pessoa.bio ? <div className="bio">{pessoa.bio}</div> : null}
+        {pessoa.amigosEmComum > 0 ? (
+          <div style={{ fontSize: 12.5, color: "var(--primaria)", marginTop: 2 }}>
+            {pessoa.amigosEmComum} em comum com você
+          </div>
+        ) : null}
       </div>
       <button
         className={`botao-seguir ${seguindo ? "seguindo" : ""}`}
         style={{ padding: "8px 18px", fontSize: 13 }}
-        onClick={() => setSeguindo((v) => !v)}
+        disabled={ocupado}
+        onClick={handleSeguir}
       >
         {seguindo ? "Seguindo" : "Seguir"}
       </button>

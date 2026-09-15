@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { notFound, useParams } from "next/navigation";
-import { USUARIOS } from "@/lib/mock-data";
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/context/AppContext";
+import { mapearMesa, mapearPessoa, mapearPost } from "@/lib/mapeadores";
+import type { Mesa, PessoaSugerida, Post } from "@/lib/types";
 import { PostCard } from "@/components/PostCard";
 import { PersonRow } from "@/components/PersonRow";
 
@@ -11,37 +13,70 @@ type Aba = "publicacoes" | "membros" | "sobre";
 
 export default function MesaDetalhePage() {
   const params = useParams<{ id: string }>();
-  const { mesas, posts, alternarSeguirMesa } = useApp();
+  const { alternarParticiparMesa, mesas } = useApp();
   const [aba, setAba] = useState<Aba>("publicacoes");
 
-  const mesa = mesas.find((m) => m.id === params.id);
-  if (!mesa) return notFound();
+  const [mesa, setMesa] = useState<Mesa | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [membros, setMembros] = useState<PessoaSugerida[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
-  const indice = mesas.findIndex((m) => m.id === mesa.id);
-  const postsDaMesa = posts.filter((_, i) => i % mesas.length === indice);
-  const postsExibidos = postsDaMesa.length ? postsDaMesa : posts.slice(0, 3);
-  const membros = USUARIOS.slice(0, 6);
+  const carregar = useCallback(async () => {
+    const supabase = createClient();
+    const { data: m } = await supabase.rpc("obter_mesa", { id_mesa: params.id });
+    const linha = (m as Parameters<typeof mapearMesa>[0][] | null)?.[0];
+    if (linha) setMesa(mapearMesa(linha));
+
+    const { data: p } = await supabase.rpc("listar_posts_da_mesa", { id_mesa: params.id, limite: 30 });
+    if (p) setPosts((p as Parameters<typeof mapearPost>[0][]).map(mapearPost));
+
+    const { data: mem } = await supabase.rpc("listar_membros_da_mesa", { id_mesa: params.id, limite: 30 });
+    if (mem) setMembros((mem as Parameters<typeof mapearPessoa>[0][]).map(mapearPessoa));
+
+    setCarregando(false);
+  }, [params.id]);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  // reflete mudança de participação feita pelo contexto global
+  const mesaGlobal = mesas.find((m) => m.id === params.id);
+  const euParticipo = mesaGlobal?.euParticipo ?? mesa?.euParticipo ?? false;
+
+  if (carregando) {
+    return (
+      <section className="view">
+        <div style={{ padding: "80px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>Carregando…</div>
+      </section>
+    );
+  }
+
+  if (!mesa) {
+    return (
+      <section className="view">
+        <div style={{ padding: "80px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
+          Essa mesa não foi encontrada.
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="view">
-      <div
-        className="comunidade-hero"
-        style={{ background: `linear-gradient(120deg, ${mesa.cor}, ${mesa.cor}aa)` }}
-      />
+      <div className="comunidade-hero" style={{ background: `linear-gradient(120deg, ${mesa.cor}, ${mesa.cor}aa)` }} />
       <div className="comunidade-cabecalho">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div className="comunidade-emoji-hero" style={{ background: mesa.cor + "22" }}>{mesa.emoji}</div>
           <button
-            className={mesa.seguindo ? "botao-contorno" : "botao-primario"}
+            className={euParticipo ? "botao-contorno" : "botao-primario"}
             style={{ padding: "10px 22px", fontSize: 14 }}
-            onClick={() => alternarSeguirMesa(mesa.id)}
+            onClick={() => alternarParticiparMesa(mesa.id)}
           >
-            {mesa.seguindo ? "Participando" : "Participar"}
+            {euParticipo ? "Participando" : "Participar"}
           </button>
         </div>
         <h2>{mesa.nome}</h2>
         <div className="sub" style={{ color: "var(--texto-fraco)", fontSize: 14, marginTop: 2 }}>
-          {mesa.membros} membros
+          {mesaGlobal?.membrosCount ?? mesa.membrosCount} membros
         </div>
         <p className="comunidade-desc">{mesa.descricao}</p>
       </div>
@@ -53,11 +88,23 @@ export default function MesaDetalhePage() {
       </div>
 
       <div className={aba === "publicacoes" ? "" : "oculto"}>
-        {postsExibidos.map((post) => <PostCard key={post.id} post={post} />)}
+        {posts.length === 0 ? (
+          <div style={{ padding: "50px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
+            Nenhuma publicação nessa mesa ainda.
+          </div>
+        ) : (
+          posts.map((post) => <PostCard key={post.id} post={post} />)
+        )}
       </div>
 
       <div className={aba === "membros" ? "" : "oculto"} style={{ padding: "8px 22px" }}>
-        {membros.map((u) => <PersonRow key={u.id} usuario={u} comBio={false} />)}
+        {membros.length === 0 ? (
+          <div style={{ padding: "40px 0", textAlign: "center", color: "var(--texto-fraco)" }}>
+            Ninguém participa dessa mesa ainda. Seja a primeira pessoa.
+          </div>
+        ) : (
+          membros.map((m) => <PersonRow key={m.id} pessoa={m} comBio={false} />)
+        )}
       </div>
 
       <div className={aba === "sobre" ? "" : "oculto"}>

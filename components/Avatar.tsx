@@ -1,4 +1,4 @@
-import { iniciaisDe } from "@/lib/mock-data";
+import { iniciaisDe } from "@/lib/mapeadores";
 
 interface AvatarProps {
   nome: string;

@@ -5,7 +5,7 @@ import type { Mesa } from "@/lib/types";
 import { useApp } from "@/context/AppContext";
 
 export function MesaCard({ mesa, mostrarCategoria = false }: { mesa: Mesa; mostrarCategoria?: boolean }) {
-  const { alternarSeguirMesa } = useApp();
+  const { alternarParticiparMesa } = useApp();
   return (
     <Link href={`/mesas/${mesa.id}`} className="card-comunidade">
       <div
@@ -16,16 +16,22 @@ export function MesaCard({ mesa, mostrarCategoria = false }: { mesa: Mesa; mostr
         <div className="emoji-grande" style={{ background: mesa.cor + "22" }}>{mesa.emoji}</div>
         <div className="nome">{mesa.nome}</div>
         <div className="membros">
-          {mesa.membros} membros{mostrarCategoria ? ` · ${mesa.categoria}` : ""}
+          {mesa.membrosCount} {mesa.membrosCount === 1 ? "membro" : "membros"}
+          {mostrarCategoria ? ` · ${mesa.categoria}` : ""}
         </div>
+        {mesa.amigosNaMesa > 0 ? (
+          <div style={{ fontSize: 12.5, color: "var(--primaria)", marginBottom: 8 }}>
+            {mesa.amigosNaMesa} {mesa.amigosNaMesa === 1 ? "pessoa que você segue" : "pessoas que você segue"} aqui
+          </div>
+        ) : null}
         <button
-          className={`botao-mini ${mesa.seguindo ? "seguindo" : ""}`}
+          className={`botao-mini ${mesa.euParticipo ? "seguindo" : ""}`}
           onClick={(e) => {
             e.preventDefault();
-            alternarSeguirMesa(mesa.id);
+            alternarParticiparMesa(mesa.id);
           }}
         >
-          {mesa.seguindo ? "Seguindo" : "Participar"}
+          {mesa.euParticipo ? "Participando" : "Participar"}
         </button>
       </div>
     </Link>

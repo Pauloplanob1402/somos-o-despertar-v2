@@ -1,25 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import { mapearPost } from "@/lib/mapeadores";
+import type { Post } from "@/lib/types";
 import { Avatar } from "@/components/Avatar";
+import { PostCard } from "@/components/PostCard";
 import { CompletarCadastro } from "@/components/CompletarCadastro";
-import { IconCoracao, IconComentar, IconCompartilhar } from "@/components/icons";
 
-type Aba = "publicacoes" | "respostas" | "comunidades";
+type Aba = "publicacoes" | "mesas";
 
 export default function PerfilPage() {
-  const { posts, mesas } = useApp();
+  const { mesas } = useApp();
   const { perfil, carregando, atualizarPerfil } = useAuth();
   const [aba, setAba] = useState<Aba>("publicacoes");
   const [editando, setEditando] = useState(false);
   const [nomeForm, setNomeForm] = useState("");
   const [bioForm, setBioForm] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [meusPosts, setMeusPosts] = useState<Post[]>([]);
 
-  const mesasSeguindo = mesas.filter((m) => m.seguindo);
-  const meusPosts = posts.filter((p) => p.autor === "eu");
+  const carregarPosts = useCallback(async () => {
+    if (!perfil) return;
+    const supabase = createClient();
+    const { data } = await supabase.rpc("listar_posts_do_perfil", {
+      id_perfil: perfil.id,
+      limite: 30,
+    });
+    if (data) setMeusPosts((data as Parameters<typeof mapearPost>[0][]).map(mapearPost));
+  }, [perfil]);
+
+  useEffect(() => { carregarPosts(); }, [carregarPosts]);
 
   if (carregando || !perfil) {
     return (
@@ -30,6 +43,8 @@ export default function PerfilPage() {
       </section>
     );
   }
+
+  const minhasMesas = mesas.filter((m) => m.euParticipo);
 
   function iniciarEdicao() {
     setNomeForm(perfil!.nome);
@@ -48,19 +63,16 @@ export default function PerfilPage() {
     <section className="view">
       <div className="topo-secao" style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <h2 style={{ fontSize: 17 }}>{perfil.nome}</h2>
-        <span className="sub" style={{ margin: 0 }}>{perfil.publicacoes_count} publicações</span>
+        <span className="sub" style={{ margin: 0 }}>
+          {perfil.publicacoes_count} {perfil.publicacoes_count === 1 ? "publicação" : "publicações"}
+        </span>
       </div>
 
-      <div
-        className="perfil-banner"
-        style={{ background: "linear-gradient(120deg, #B8663F, #5C4A66)" }}
-      />
+      <div className="perfil-banner" style={{ background: "linear-gradient(120deg, #B8663F, #5C4A66)" }} />
       <div className="perfil-cabecalho">
         <div className="perfil-avatar-wrap">
           <Avatar nome={perfil.nome} cor={perfil.cor} tamanho={92} />
-          {!editando ? (
-            <button className="botao-contorno" onClick={iniciarEdicao}>Editar perfil</button>
-          ) : null}
+          {!editando ? <button className="botao-contorno" onClick={iniciarEdicao}>Editar perfil</button> : null}
         </div>
 
         {!editando ? (
@@ -107,56 +119,36 @@ export default function PerfilPage() {
 
       <div className="abas">
         <button className={`aba ${aba === "publicacoes" ? "ativa" : ""}`} onClick={() => setAba("publicacoes")}>Publicações</button>
-        <button className={`aba ${aba === "respostas" ? "ativa" : ""}`} onClick={() => setAba("respostas")}>Respostas</button>
-        <button className={`aba ${aba === "comunidades" ? "ativa" : ""}`} onClick={() => setAba("comunidades")}>Comunidades</button>
+        <button className={`aba ${aba === "mesas" ? "ativa" : ""}`} onClick={() => setAba("mesas")}>Mesas</button>
       </div>
 
       <div className={aba === "publicacoes" ? "" : "oculto"}>
         {meusPosts.length === 0 ? (
           <div style={{ padding: "60px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
             <p style={{ fontSize: 15 }}>Você ainda não publicou nada.</p>
-            <p style={{ fontSize: 13.5, marginTop: 6 }}>
-              O que publicar aparece aqui — por enquanto só nesta sessão do navegador.
-            </p>
+            <p style={{ fontSize: 13.5, marginTop: 6 }}>O que você publicar aparece aqui.</p>
           </div>
         ) : (
-          meusPosts.map((post) => (
-            <article className="post" key={post.id}>
-              <Avatar nome={perfil.nome} cor={perfil.cor} tamanho={46} />
-              <div className="post-corpo">
-                <div className="post-cabecalho">
-                  <span className="nome">{perfil.nome}</span>
-                  <span className="arroba">@{perfil.arroba}</span>
-                  <span className="tempo">· {post.tempo}</span>
-                </div>
-                <p className="post-texto">{post.texto ?? post.pergunta}</p>
-                <div className="post-acoes">
-                  <button className="acao-post"><IconCoracao /><span>{post.curtidas}</span></button>
-                  <button className="acao-post"><IconComentar /><span>{post.comentarios}</span></button>
-                  <button className="acao-post"><IconCompartilhar /><span>Compartilhar</span></button>
-                </div>
-              </div>
-            </article>
-          ))
+          meusPosts.map((post) => <PostCard key={post.id} post={post} />)
         )}
       </div>
 
-      <div className={aba === "respostas" ? "" : "oculto"}>
-        <div style={{ padding: "60px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
-          Nenhuma resposta ainda.
-        </div>
-      </div>
-
-      <div className={aba === "comunidades" ? "" : "oculto"}>
-        {mesasSeguindo.map((mesa) => (
-          <div className="comunidade-linha" key={mesa.id} style={{ padding: "10px 22px" }}>
-            <div className="comunidade-emoji" style={{ background: mesa.cor + "22" }}>{mesa.emoji}</div>
-            <div className="comunidade-linha-info">
-              <div className="nome">{mesa.nome}</div>
-              <div className="membros">{mesa.membros} membros</div>
-            </div>
+      <div className={aba === "mesas" ? "" : "oculto"}>
+        {minhasMesas.length === 0 ? (
+          <div style={{ padding: "50px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
+            Você ainda não participa de nenhuma mesa.
           </div>
-        ))}
+        ) : (
+          minhasMesas.map((mesa) => (
+            <div className="comunidade-linha" key={mesa.id} style={{ padding: "10px 22px" }}>
+              <div className="comunidade-emoji" style={{ background: mesa.cor + "22" }}>{mesa.emoji}</div>
+              <div className="comunidade-linha-info">
+                <div className="nome">{mesa.nome}</div>
+                <div className="membros">{mesa.membrosCount} membros</div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );

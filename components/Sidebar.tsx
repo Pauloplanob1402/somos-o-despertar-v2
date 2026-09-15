@@ -3,28 +3,34 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar } from "./Avatar";
 import { useApp } from "@/context/AppContext";
+import { useMensagens } from "@/context/MensagensContext";
+import { useNotificacoes } from "@/context/NotificacoesContext";
+import { Avatar } from "./Avatar";
 import {
   IconInicio, IconExplorar, IconMesas, IconPessoas,
   IconMensagens, IconNotificacoes, IconSalvos, IconPerfil,
 } from "./icons";
 
-const ITENS_NAV = [
-  { href: "/inicio", label: "Início", Icone: IconInicio },
-  { href: "/explorar", label: "Descobrir", Icone: IconExplorar },
-  { href: "/mesas", label: "Mesas", Icone: IconMesas },
-  { href: "/pessoas", label: "Pessoas", Icone: IconPessoas },
-  { href: "/mensagens", label: "Mensagens", Icone: IconMensagens, badge: 7 },
-  { href: "/notificacoes", label: "Notificações", Icone: IconNotificacoes, badge: 3 },
-  { href: "/guardados", label: "Guardados", Icone: IconSalvos },
-  { href: "/perfil", label: "Meu perfil", Icone: IconPerfil },
-];
-
 export function Sidebar() {
   const pathname = usePathname();
   const { abrirComposer } = useApp();
   const { perfil, carregando } = useAuth();
+  const { conversas } = useMensagens();
+  const { naoLidas: notificacoesNaoLidas } = useNotificacoes();
+
+  const mensagensNaoLidas = conversas.reduce((soma, c) => soma + c.naoLidas, 0);
+
+  const ITENS_NAV = [
+    { href: "/inicio", label: "Início", Icone: IconInicio },
+    { href: "/explorar", label: "Descobrir", Icone: IconExplorar },
+    { href: "/mesas", label: "Mesas", Icone: IconMesas },
+    { href: "/pessoas", label: "Pessoas", Icone: IconPessoas },
+    { href: "/mensagens", label: "Mensagens", Icone: IconMensagens, badge: mensagensNaoLidas },
+    { href: "/notificacoes", label: "Notificações", Icone: IconNotificacoes, badge: notificacoesNaoLidas },
+    { href: "/guardados", label: "Guardados", Icone: IconSalvos },
+    { href: "/perfil", label: "Meu perfil", Icone: IconPerfil },
+  ];
 
   return (
     <aside className="sidebar">

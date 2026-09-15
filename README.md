@@ -4,13 +4,109 @@ Rede social para quem está em jornada de despertar espiritual encontrar
 outras pessoas na mesma caminhada. Slogan: **"Onde quem está despertando
 se encontra."**
 
-## Status: Etapas 1, 2 e 3 concluídas — Frontend, Schema e Autenticação
+## Status: Etapas 1 a 5 concluídas — o app inteiro roda com dados reais
 
-Este projeto porta o protótipo estático (HTML/CSS/JS) para uma aplicação
-Next.js real, componentizada, com rotas próprias, schema completo do banco
-(Supabase/Postgres) e autenticação real funcionando (sessão anônima → conta
-permanente). **O conteúdo do feed ainda é mockado** (`lib/mock-data.ts`) —
-isso é trocado por dados reais na Etapa 5 (algoritmo do feed).
+Não existe mais nenhum dado fictício no projeto: `lib/mock-data.ts` foi
+**removido**. Feed, mesas, pessoas, busca, comentários, enquetes,
+mensagens e notificações vêm todos do Supabase. Falta só a Etapa 6
+(produção: moderação, políticas, deploy).
+
+## Etapa 5 — Algoritmo do feed & Gemini
+
+### O ranking do feed
+
+Fica todo em `supabase/migrations/0012_feed.sql`, na função
+`listar_feed()`. É uma pontuação simples e auditável — dá pra explicar
+pra qualquer pessoa por que um post apareceu antes de outro:
+
+```
+pontuacao = afinidade + engajamento + novidade
+
+afinidade    +3 se eu sigo o autor
+             +2 se o post é de uma mesa que eu participo
+engajamento  ln(1 + curtidas + 2 × comentários)
+novidade     5 × exp(−idade_em_segundos / 43200)   (meia-vida de 12h)
+```
+
+Por que assim:
+- **log no engajamento** impede que um post com 500 curtidas domine o
+  feed pra sempre;
+- **comentário pesa o dobro de curtida** porque indica conversa de
+  verdade, não só aprovação passiva;
+- **decaimento de 12h** garante que o feed não congele nos mesmos
+  campeões de sempre.
+
+Testado de verdade contra Postgres: um post viral de 3 dias atrás
+(6,82 pts) aparece acima de um post novo de estranho (5,00), mas ainda
+abaixo de quem você segue (8,00) — que é exatamente o equilíbrio
+desejado. Os pesos estão todos num lugar só, fáceis de ajustar quando
+houver uso real.
+
+### Recomendações (sem IA)
+
+Base determinística, em `0013_descoberta.sql`: mesas ordenadas por
+quantas pessoas que **você segue** já estão nelas; pessoas ordenadas por
+**amigos em comum** (seguido por quem você segue). Nada de caixa-preta.
+
+### Gemini — sempre no backend
+
+A chave fica em `GEMINI_API_KEY`, **sem** o prefixo `NEXT_PUBLIC_`, e
+`lib/gemini.ts` é marcado `server-only`: se alguém importar esse arquivo
+num componente de cliente por engano, **o build quebra de propósito**.
+A chave nunca chega ao navegador.
+
+| Rota | O que faz |
+|---|---|
+| `POST /api/gemini/resumo` | Resume uma discussão longa (aparece como "Resumir conversa" quando um post tem 3+ comentários) |
+| `POST /api/gemini/sugerir-mesas` | Escolhe, entre as mesas que **já existem**, quais combinam com os interesses da pessoa |
+
+Três cuidados que valem notar:
+1. **O Gemini não inventa mesas** — ele só escolhe ids do catálogo real, e
+   qualquer id que ele devolva fora da lista é descartado no servidor.
+2. **Proteção contra injeção de prompt**: comentários entram delimitados e
+   marcados explicitamente como dado, não instrução — senão bastaria
+   alguém comentar "ignore as instruções acima" pra sequestrar o resumo.
+3. **`GEMINI_API_KEY` é opcional**: sem ela, o resumo some e as sugestões
+   caem nas mesas mais populares. Nada quebra.
+
+O tom do modelo (`TOM_DESPERTAR`) proíbe explicitamente julgar a
+caminhada de alguém, diagnosticar, dar conselho médico/psicológico ou
+inventar versículos — que é justamente o que essa comunidade não quer.
+
+## Etapa 4 — Mensagens & notificações em tempo real
+
+Diferente do feed (que continua mockado até a Etapa 5), **mensagens e
+notificações já são 100% reais** — gravadas no Postgres via Supabase e
+entregues ao vivo via Realtime, sem precisar recarregar a página.
+
+| Arquivo | Papel |
+|---|---|
+| `supabase/migrations/0009_mensagens_realtime.sql` | Coluna `lido_ate` (pra contar não lidas de verdade) + RPCs `listar_minhas_conversas()`, `marcar_conversa_lida()`, `obter_ou_criar_conversa_pessoa()` |
+| `supabase/migrations/0010_realtime.sql` | Liga o Realtime nas tabelas `mensagens` e `notificacoes` |
+| `supabase/migrations/0011_notificacoes_rpc.sql` | RPCs `listar_minhas_notificacoes()` (já com nome de quem praticou a ação) e `marcar_todas_notificacoes_lidas()` |
+| `context/MensagensContext.tsx` | `useMensagens()` — conversas, mensagens da conversa aberta, enviar mensagem, buscar pessoa por @arroba, iniciar conversa |
+| `context/NotificacoesContext.tsx` | `useNotificacoes()` — lista, contador de não lidas, marcar tudo como lido |
+| `context/PresenceContext.tsx` | `usePresence()` — quem está com o app aberto agora (Realtime Presence, sem tabela nova) |
+| `components/Mensagens.tsx` | Tela de Mensagens reescrita: lista real, indicador online real, busca por @arroba pra começar uma conversa nova |
+
+**Como testar de verdade:** como as mensagens exigem duas contas reais
+(não dá pra mandar mensagem pros usuários de exemplo do feed — João,
+Maria etc. não existem como contas), abra duas sessões diferentes (duas
+abas anônimas, ou uma anônima + uma logada com Google) e use a busca por
+@arroba na aba Mensagens pra uma iniciar conversa com a outra. As
+mensagens e a contagem de não lidas atualizam ao vivo dos dois lados,
+sem F5.
+
+Assim como na Etapa 2, **testei o schema novo rodando de verdade** contra
+o Postgres local — iniciar conversa, reutilizar em vez de duplicar,
+bloquear autochat, contagem de não lidas certa pra cada lado, marcar como
+lida, notificação já com o nome de quem praticou a ação, e isolamento
+entre usuários que não participam da conversa.
+
+Uma limitação conhecida: chat em grupo já funciona no schema e na tela,
+mas ainda não tem um botão de "criar grupo" na interface — os únicos
+grupos possíveis por enquanto são os criados direto no banco. Fica pra
+uma iteração futura.
 
 ## Etapa 3 — Autenticação
 
@@ -59,6 +155,10 @@ dashboard do seu projeto, sem eles o login não funciona:
    mas é limitado (poucos e-mails/hora) — pra produção de verdade, configurar
    um SMTP próprio em Project Settings → Auth → SMTP Settings.
 
+Realtime **não precisa de nenhum passo manual** — a migration
+`0010_realtime.sql` já liga as tabelas necessárias na publicação
+`supabase_realtime` sozinha.
+
 ## Etapa 2 — Schema do Supabase
 
 As migrations estão em `supabase/migrations/`, numeradas na ordem em que
@@ -76,6 +176,11 @@ desde a criação — nada fica aberto por padrão.
 | `0006_notificacoes.sql` | Notificações (inseridas só por gatilho, nunca direto pelo cliente) |
 | `0007_gatilhos.sql` | Gatilhos que mantêm os contadores (curtidas, comentários, seguidores, membros, publicações) e geram notificações automaticamente |
 | `0008_indices.sql` | Índices para as consultas mais comuns (feed, perfil, mensagens, notificações, busca) |
+| `0009_mensagens_realtime.sql` | (Etapa 4) `lido_ate` + RPCs de conversas |
+| `0010_realtime.sql` | (Etapa 4) Liga o Realtime em `mensagens` e `notificacoes` |
+| `0011_notificacoes_rpc.sql` | (Etapa 4) RPCs de notificações |
+| `0012_feed.sql` | (Etapa 5) Ranking do feed, posts por perfil/mesa, opções de enquete com %, `criar_post` |
+| `0013_descoberta.sql` | (Etapa 5) Mesas, membros, pessoas sugeridas, busca, "em alta", comentários |
 
 `supabase/seed.sql` já povoa as 5 mesas do protótipo. Perfis e posts de
 teste só podem ser criados depois que existir pelo menos um usuário real
@@ -129,19 +234,35 @@ app/
 
 components/                → Sidebar, MobileNav, RightRail, PostCard, MesaCard,
                               PersonRow, ComposeModal, OnboardingFlow, Mensagens,
-                              Toast, Avatar, icons.tsx
-context/AppContext.tsx     → estado global em memória (posts, mesas, conversas, toasts)
-lib/mock-data.ts           → todos os dados fictícios
-lib/types.ts               → tipos TypeScript compartilhados
+                              CompletarCadastro, Toast, Avatar, icons.tsx
+context/AuthContext.tsx        → sessão, perfil real, reivindicar conta
+context/AppContext.tsx         → feed mockado (posts, mesas, toasts, composer)
+context/MensagensContext.tsx   → conversas e mensagens reais + Realtime
+context/NotificacoesContext.tsx→ notificações reais + Realtime
+context/PresenceContext.tsx    → quem está online agora
+lib/supabase/                  → clientes (browser, server, middleware)
+lib/mapeadores.ts              → converte snake_case das RPCs pra camelCase
+lib/gemini.ts                  → chamadas ao Gemini (server-only)
+lib/constantes.ts              → temas do onboarding
+lib/types.ts                   → tipos TypeScript compartilhados
+app/api/gemini/                → rotas de IA (resumo, sugerir-mesas)
+supabase/migrations/           → 13 migrations SQL, na ordem de aplicação
+supabase/seed.sql              → as 5 mesas iniciais
 ```
 
-## Próximas etapas
+## Próxima etapa
 
-- **Etapa 3 — Autenticação:** Supabase Auth (sessão anônima → conta real),
-  e aí sim trocar `lib/mock-data.ts` por chamadas reais ao banco.
-- **Etapa 4 — Mensagens & notificações em tempo real:** Supabase Realtime.
-- **Etapa 5 — Algoritmo do feed & Gemini:** ranking de posts, recomendação
-  de mesas/pessoas, busca inteligente e resumo de discussões (Gemini sempre
-  chamado pelo backend, nunca com API key no frontend).
-- **Etapa 6 — Produção:** moderação real, políticas, deploy no Vercel,
-  ajustes de PWA/mobile e lançamento.
+- **Etapa 6 — Produção:** moderação de verdade (hoje os botões de
+  denunciar/bloquear só mostram um aviso, não gravam nada), política de
+  privacidade e termos, deploy no Vercel, ajustes de PWA/mobile e
+  lançamento.
+
+### O que ainda é "de mentirinha" na interface
+
+Pra não haver surpresa depois:
+- **Denunciar / bloquear / ocultar**: só mostram um toast. Nada é gravado.
+- **Guardados**: a tela existe, mas salvar post ainda não foi implementado.
+- **Foto e vídeo** no composer: os botões existem, mas upload não está
+  ligado (precisa do Supabase Storage).
+- **Criar grupo** de mensagens: o schema suporta, a interface ainda não tem
+  o botão.

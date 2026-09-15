@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import { useMensagens } from "@/context/MensagensContext";
 import { IconInicio, IconExplorar, IconMensagens, IconPerfil } from "./icons";
 
 export function TopoMobile() {
@@ -16,6 +17,8 @@ export function TopoMobile() {
 export function NavMobile() {
   const pathname = usePathname();
   const { abrirComposer } = useApp();
+  const { conversas } = useMensagens();
+  const temNaoLidas = conversas.some((c) => c.naoLidas > 0);
 
   const item = (href: string, Icone: typeof IconInicio, badge?: boolean) => (
     <Link href={href} className={`nav-mobile-item ${pathname?.startsWith(href) ? "ativo" : ""}`}>
@@ -34,7 +37,7 @@ export function NavMobile() {
           <path d="M12 8v8M8 12h8" />
         </svg>
       </button>
-      {item("/mensagens", IconMensagens, true)}
+      {item("/mensagens", IconMensagens, temNaoLidas)}
       {item("/perfil", IconPerfil)}
     </nav>
   );

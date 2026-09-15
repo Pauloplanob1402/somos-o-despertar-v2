@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { INTERESSES_ONBOARDING } from "@/lib/mock-data";
+import { INTERESSES_ONBOARDING } from "@/lib/constantes";
 
 export function OnboardingFlow() {
   const router = useRouter();
@@ -19,6 +19,15 @@ export function OnboardingFlow() {
   }
 
   function finalizar() {
+    // guarda os interesses pra alimentar a sugestão de mesas no feed
+    try {
+      window.localStorage.setItem(
+        "despertar:interesses",
+        JSON.stringify(Array.from(selecionados))
+      );
+    } catch {
+      // navegador sem localStorage (aba privada em alguns casos) — segue sem
+    }
     router.push("/inicio");
   }
 

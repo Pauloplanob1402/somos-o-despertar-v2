@@ -4,13 +4,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
-import { RecomendacaoSuaMesa, RecomendacaoPessoasComoVoce } from "@/components/RecommendationInline";
+import { SugestoesDeMesa } from "@/components/SugestoesDeMesa";
 import { IconFoto, IconVideo, IconEnquete } from "@/components/icons";
 
 export default function InicioPage() {
-  const { posts, mesas, abrirComposer } = useApp();
+  const { posts, carregandoFeed, abrirComposer } = useApp();
   const { perfil } = useAuth();
-  const mesaDestaque = mesas[3];
 
   return (
     <section className="view">
@@ -40,15 +39,27 @@ export default function InicioPage() {
         </div>
       </div>
 
-      <div>
-        {posts.map((post, i) => (
-          <div key={post.id}>
-            <PostCard post={post} />
-            {i === 2 ? <RecomendacaoSuaMesa /> : null}
-            {i === 6 && mesaDestaque ? <RecomendacaoPessoasComoVoce nomeMesa={mesaDestaque.nome} /> : null}
-          </div>
-        ))}
-      </div>
+      {carregandoFeed ? (
+        <div style={{ padding: "60px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
+          Carregando o feed…
+        </div>
+      ) : posts.length === 0 ? (
+        <div style={{ padding: "60px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
+          <p style={{ fontSize: 15 }}>O feed ainda está em silêncio.</p>
+          <p style={{ fontSize: 13.5, marginTop: 6 }}>
+            Seja a primeira pessoa a compartilhar algo — ou entre numa mesa pra ver o que estão conversando.
+          </p>
+        </div>
+      ) : (
+        <div>
+          {posts.map((post, i) => (
+            <div key={post.id}>
+              <PostCard post={post} />
+              {i === 2 ? <SugestoesDeMesa /> : null}
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

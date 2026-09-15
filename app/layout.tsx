@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { AppProvider } from "@/context/AppContext";
+import { PresenceProvider } from "@/context/PresenceContext";
+import { MensagensProvider } from "@/context/MensagensContext";
+import { NotificacoesProvider } from "@/context/NotificacoesContext";
 import { Toast } from "@/components/Toast";
 import "./globals.css";
 
@@ -32,8 +35,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${cormorant.variable} ${inter.variable}`}>
         <AuthProvider>
           <AppProvider>
-            {children}
-            <Toast />
+            <PresenceProvider>
+              <MensagensProvider>
+                <NotificacoesProvider>
+                  {children}
+                  <Toast />
+                </NotificacoesProvider>
+              </MensagensProvider>
+            </PresenceProvider>
           </AppProvider>
         </AuthProvider>
       </body>
