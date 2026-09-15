@@ -35,11 +35,31 @@ export default function PerfilPage() {
 
   useEffect(() => { carregarPosts(); }, [carregarPosts]);
 
-  if (carregando || !perfil) {
+  if (carregando) {
     return (
       <section className="view">
         <div style={{ padding: "80px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
           Carregando perfil…
+        </div>
+      </section>
+    );
+  }
+
+  if (!perfil) {
+    return (
+      <section className="view">
+        <div style={{ padding: "80px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
+          <p style={{ fontSize: 15 }}>Não conseguimos carregar seu perfil.</p>
+          <p style={{ fontSize: 13.5, marginTop: 6 }}>
+            Isso pode ser algo temporário — tente novamente.
+          </p>
+          <button
+            className="botao-contorno"
+            style={{ marginTop: 16 }}
+            onClick={() => window.location.reload()}
+          >
+            Tentar de novo
+          </button>
         </div>
       </section>
     );
