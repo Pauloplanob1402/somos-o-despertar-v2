@@ -1129,3 +1129,164 @@ input, textarea { font-family: inherit; }
 .abas { overflow-x: auto; scrollbar-width: none; }
 .abas::-webkit-scrollbar { display: none; }
 .abas .aba { white-space: nowrap; }
+
+/* =====================================================================
+   Versículo do dia — a âncora de abertura do feed.
+   Usa os mesmos tokens do resto do app (nada de cor ou fonte nova);
+   o que o distingue é a borda mais suave e o texto em serifa, como uma
+   página de devocional dentro do feed.
+   ===================================================================== */
+.versiculo-dia {
+  margin: 0 22px 18px;
+  padding: 20px 22px;
+  border: 1px solid var(--borda);
+  border-left: 3px solid var(--primaria);
+  border-radius: var(--raio-md);
+  background: var(--primaria-fundo);
+}
+.versiculo-dia-compacto { margin-top: 18px; }
+
+.versiculo-dia-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.versiculo-dia-etiqueta {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primaria);
+}
+.versiculo-dia-tema {
+  font-size: 11.5px;
+  color: var(--texto-fraco);
+  padding: 2px 9px;
+  border-radius: var(--raio-pill);
+  background: var(--bg-elevado);
+}
+
+.versiculo-dia-texto {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 21px;
+  line-height: 1.45;
+  color: var(--texto);
+}
+.versiculo-dia-ref {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-style: normal;
+  color: var(--texto-fraco);
+}
+.versiculo-dia-convite {
+  margin-top: 14px;
+  font-size: 14.5px;
+  color: var(--texto-suave);
+}
+
+.versiculo-dia-rodape {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.versiculo-dia-social {
+  font-size: 13px;
+  color: var(--texto-fraco);
+  text-decoration: none;
+}
+.versiculo-dia-social:hover { text-decoration: underline; }
+.versiculo-dia-feito {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--primaria);
+}
+
+.versiculo-no-composer {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--primaria);
+  background: var(--primaria-fundo);
+  border-radius: var(--raio-sm);
+}
+.versiculo-no-composer blockquote {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.versiculo-no-composer cite {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-style: normal;
+  color: var(--texto-fraco);
+}
+
+.aviso-pedido {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: var(--texto-fraco);
+}
+
+/* =====================================================================
+   Pedido de oração
+   ===================================================================== */
+.post-pedido { background: linear-gradient(to right, var(--primaria-fundo) 0 3px, transparent 3px); }
+
+.etiqueta-pedido,
+.etiqueta-reflexao {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: var(--raio-pill);
+  white-space: nowrap;
+}
+.etiqueta-pedido { background: var(--primaria); color: #fff; }
+.etiqueta-reflexao { background: var(--primaria-fundo); color: var(--texto-suave); }
+
+.bloco-oracao {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.botao-oracao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: var(--raio-pill);
+  border: 1px solid var(--primaria);
+  background: none;
+  color: var(--primaria);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.botao-oracao:hover { background: var(--primaria-fundo); }
+.botao-oracao.orando {
+  background: var(--primaria);
+  color: #fff;
+}
+.oracao-contagem {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.oracao-contagem:hover { text-decoration: underline; }
+.oracao-contagem-vazia { font-size: 13px; color: var(--texto-fraco); }
+.oracao-pessoas { display: flex; flex-wrap: wrap; gap: 6px; }

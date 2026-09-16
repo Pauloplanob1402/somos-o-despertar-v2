@@ -17,8 +17,15 @@ import {
   mapearMesa,
   mapearOpcao,
   mapearPost,
+  mapearVersiculo,
 } from "@/lib/mapeadores";
-import type { EmAlta, Mesa, Post } from "@/lib/types";
+import type { EmAlta, Mesa, Post, VersiculoDoDia } from "@/lib/types";
+
+/** Com o que o composer abre: post comum, pedido de oração ou reflexão. */
+export interface ContextoComposer {
+  tipo?: "texto" | "oracao";
+  versiculo?: VersiculoDoDia | null;
+}
 
 export type MotivoDenuncia = "spam" | "odio" | "assedio" | "impropria" | "outro";
 
@@ -42,7 +49,17 @@ interface AppContextValue {
       imagem: string | null;
       dominio: string;
     } | null;
+    tipo?: "texto" | "oracao";
+    versiculoId?: string | null;
   }) => Promise<{ erro: string | null }>;
+
+  /** "estou orando por você" — alterna, como a curtida, mas notifica com nome */
+  orarPorPost: (id: string) => Promise<void>;
+
+  // versículo do dia
+  versiculo: VersiculoDoDia | null;
+  carregandoVersiculo: boolean;
+  recarregarVersiculo: () => Promise<void>;
 
   // mesas
   mesas: Mesa[];
@@ -66,7 +83,8 @@ interface AppContextValue {
   toast: string | null;
   mostrarToast: (texto: string) => void;
   composerAberto: boolean;
-  abrirComposer: () => void;
+  composerContexto: ContextoComposer;
+  abrirComposer: (contexto?: ContextoComposer) => void;
   fecharComposer: () => void;
 }
 
@@ -83,7 +101,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [emAlta, setEmAlta] = useState<EmAlta[]>([]);
 
   const [toast, setToast] = useState<string | null>(null);
+  const [versiculo, setVersiculo] = useState<VersiculoDoDia | null>(null);
+  const [carregandoVersiculo, setCarregandoVersiculo] = useState(true);
   const [composerAberto, setComposerAberto] = useState(false);
+  const [composerContexto, setComposerContexto] = useState<ContextoComposer>({});
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mostrarToast = useCallback((texto: string) => {
@@ -128,6 +149,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCarregandoFeed(false);
   }, [supabase]);
 
+  const recarregarVersiculo = useCallback(async () => {
+    const { data } = await supabase.rpc("obter_versiculo_do_dia");
+    const linha = Array.isArray(data) ? data[0] : null;
+    setVersiculo(linha ? mapearVersiculo(linha) : null);
+    setCarregandoVersiculo(false);
+  }, [supabase]);
+
   const recarregarMesas = useCallback(async () => {
     const { data } = await supabase.rpc("listar_mesas");
     if (data) setMesas((data as Parameters<typeof mapearMesa>[0][]).map(mapearMesa));
@@ -144,7 +172,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     recarregarFeed();
     recarregarMesas();
     recarregarEmAlta();
-  }, [user, recarregarFeed, recarregarMesas, recarregarEmAlta]);
+    recarregarVersiculo();
+  }, [user, recarregarFeed, recarregarMesas, recarregarEmAlta, recarregarVersiculo]);
 
   /**
    * Curtir/descurtir: atualiza a tela na hora (otimista) e só então fala
@@ -215,8 +244,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         imagem: string | null;
         dominio: string;
       } | null;
+      tipo?: "texto" | "oracao";
+      versiculoId?: string | null;
     }) => {
       const { error } = await supabase.rpc("criar_post", {
+        p_tipo: dados.tipo ?? "texto",
+        p_versiculo_id: dados.versiculoId ?? null,
         p_texto: dados.texto ?? null,
         p_pergunta: dados.pergunta ?? null,
         p_opcoes: dados.opcoes ?? null,
@@ -234,11 +267,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { erro: error.message };
       }
       setComposerAberto(false);
-      mostrarToast("Publicação criada");
+      setComposerContexto({});
+      mostrarToast(
+        dados.tipo === "oracao"
+          ? "Seu pedido foi partilhado"
+          : dados.versiculoId
+            ? "Sua reflexão foi publicada"
+            : "Publicação criada"
+      );
       await recarregarFeed();
+      // se era reflexão, o card do versículo muda de estado na hora
+      if (dados.versiculoId) await recarregarVersiculo();
       return { erro: null };
     },
-    [supabase, mostrarToast, recarregarFeed]
+    [supabase, mostrarToast, recarregarFeed, recarregarVersiculo]
+  );
+
+  /**
+   * "Estou orando por você". Mesmo desenho otimista da curtida, mas o
+   * peso é outro: do outro lado alguém recebe uma notificação com nome
+   * e rosto, então vale desfazer direitinho se o banco recusar.
+   */
+  const orarPorPost = useCallback(
+    async (id: string) => {
+      if (!user) return;
+      const alvo = posts.find((p) => p.id === id);
+      const jaOrava = alvo?.euOrei ?? false;
+
+      setPosts((atual) =>
+        atual.map((p) =>
+          p.id === id
+            ? { ...p, euOrei: !jaOrava, oracoesCount: p.oracoesCount + (jaOrava ? -1 : 1) }
+            : p
+        )
+      );
+
+      const { error } = jaOrava
+        ? await supabase.from("oracoes").delete().eq("post_id", id).eq("usuario_id", user.id)
+        : await supabase.from("oracoes").insert({ post_id: id, usuario_id: user.id });
+
+      if (error) {
+        setPosts((atual) =>
+          atual.map((p) =>
+            p.id === id
+              ? { ...p, euOrei: jaOrava, oracoesCount: p.oracoesCount + (jaOrava ? 1 : -1) }
+              : p
+          )
+        );
+        mostrarToast("Não deu pra registrar agora.");
+        return;
+      }
+      if (!jaOrava) mostrarToast("Avisamos que você está orando 🙏");
+    },
+    [posts, user, supabase, mostrarToast]
   );
 
   const alternarParticiparMesa = useCallback(
@@ -362,25 +443,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [user, supabase, mostrarToast]
   );
 
-  const abrirComposer = useCallback(() => setComposerAberto(true), []);
-  const fecharComposer = useCallback(() => setComposerAberto(false), []);
+  const abrirComposer = useCallback((contexto?: ContextoComposer) => {
+    setComposerContexto(contexto ?? {});
+    setComposerAberto(true);
+  }, []);
+  const fecharComposer = useCallback(() => {
+    setComposerAberto(false);
+    setComposerContexto({});
+  }, []);
 
   const value = useMemo<AppContextValue>(
     () => ({
       posts, carregandoFeed, recarregarFeed, curtirPost, votarEnquete, publicarPost,
+      orarPorPost,
+      versiculo, carregandoVersiculo, recarregarVersiculo,
       mesas, carregandoMesas, alternarParticiparMesa,
       emAlta,
       alternarSeguirPessoa,
       alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, denunciarPessoa,
-      toast, mostrarToast, composerAberto, abrirComposer, fecharComposer,
+      toast, mostrarToast, composerAberto, composerContexto, abrirComposer, fecharComposer,
     }),
     [
       posts, carregandoFeed, recarregarFeed, curtirPost, votarEnquete, publicarPost,
+      orarPorPost,
+      versiculo, carregandoVersiculo, recarregarVersiculo,
       mesas, carregandoMesas, alternarParticiparMesa,
       emAlta,
       alternarSeguirPessoa,
       alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, denunciarPessoa,
-      toast, mostrarToast, composerAberto, abrirComposer, fecharComposer,
+      toast, mostrarToast, composerAberto, composerContexto, abrirComposer, fecharComposer,
     ]
   );
 

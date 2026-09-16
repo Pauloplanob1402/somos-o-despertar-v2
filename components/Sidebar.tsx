@@ -57,7 +57,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <button className="botao-publicar-lateral" onClick={abrirComposer}>
+      <button className="botao-publicar-lateral" onClick={() => abrirComposer()}>
         Publicar
       </button>
 

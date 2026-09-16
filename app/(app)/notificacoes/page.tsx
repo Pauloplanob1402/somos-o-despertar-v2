@@ -32,6 +32,8 @@ function detalhesNotificacao(n: NotificacaoReal): { icone: string; cor: string; 
       return { icone: "👥", cor: "#FBF1DE", complemento: `convidou você para a mesa ${n.mesaNome ?? ""}.` };
     case "mensagem":
       return { icone: "💬", cor: "#EDE7F0", complemento: "enviou uma mensagem." };
+    case "oracao":
+      return { icone: "🙏", cor: "#F3E6DC", complemento: "está orando pelo seu pedido." };
     default:
       return { icone: "🔔", cor: "#EDE7F0", complemento: "interagiu com você." };
   }

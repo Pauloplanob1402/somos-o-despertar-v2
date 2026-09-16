@@ -20,8 +20,13 @@ interface PreviaLink {
 }
 
 export function ComposeModal() {
-  const { composerAberto, fecharComposer, publicarPost, mesas } = useApp();
+  const { composerAberto, composerContexto, fecharComposer, publicarPost, mesas } = useApp();
   const { perfil, user } = useAuth();
+
+  // o composer abre em três contextos: post comum, pedido de oração ou
+  // reflexão sobre o versículo do dia. Quem decide é quem abriu.
+  const versiculo = composerContexto.versiculo ?? null;
+  const ehPedido = composerContexto.tipo === "oracao";
 
   const [texto, setTexto] = useState("");
   const [modoEnquete, setModoEnquete] = useState(false);
@@ -89,12 +94,30 @@ export function ComposeModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [texto, modoEnquete]);
 
+  // pedido de oração e reflexão nunca são enquete — se o modo tinha
+  // ficado ligado de um uso anterior, desliga ao abrir.
+  useEffect(() => {
+    if (composerAberto && (ehPedido || versiculo)) setModoEnquete(false);
+  }, [composerAberto, ehPedido, versiculo]);
+
   function dispensarLink() {
     if (previaLink) setLinkDispensado(previaLink.url);
     setPreviaLink(null);
   }
 
   if (!composerAberto) return null;
+
+  const titulo = ehPedido
+    ? "Um pedido de oração"
+    : versiculo
+      ? "Sua reflexão de hoje"
+      : "O que está despertando em você?";
+
+  const placeholder = ehPedido
+    ? "Conte o que você está vivendo. Alguém vai orar por isso."
+    : versiculo
+      ? versiculo.convite
+      : "Compartilhe o que Deus está falando com você...";
 
   const opcoesValidas = opcoes.filter((o) => o.trim().length > 0);
   const podePublicar = modoEnquete
@@ -182,6 +205,8 @@ export function ComposeModal() {
             mesaId: mesaId || null,
             imagemUrl,
             link: previaLink,
+            tipo: ehPedido ? ("oracao" as const) : ("texto" as const),
+            versiculoId: versiculo?.id ?? null,
           }
     );
 
@@ -198,11 +223,25 @@ export function ComposeModal() {
       <div className="modal-caixa" onClick={(e) => e.stopPropagation()}>
         <div className="modal-topo">
           <button className="fechar-modal" onClick={handleFechar}><IconFechar /></button>
-          <h3>O que está despertando em você?</h3>
+          <h3>{titulo}</h3>
           <span style={{ width: 32 }} />
         </div>
 
         <div className="modal-corpo">
+          {versiculo ? (
+            <div className="versiculo-no-composer">
+              <blockquote>{versiculo.texto}</blockquote>
+              <cite>{versiculo.referencia}</cite>
+            </div>
+          ) : null}
+
+          {ehPedido ? (
+            <p className="aviso-pedido">
+              Este pedido fica visível para quem vê seu perfil. Escreva só o
+              que você quiser partilhar.
+            </p>
+          ) : null}
+
           <div className="modal-composer">
             <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} tamanho={46} />
             <div style={{ flex: 1 }}>
@@ -211,7 +250,7 @@ export function ComposeModal() {
                   autoFocus
                   value={texto}
                   onChange={(e) => setTexto(e.target.value)}
-                  placeholder="Compartilhe o que Deus está falando com você..."
+                  placeholder={placeholder}
                   style={{ width: "100%" }}
                 />
               ) : (
@@ -355,12 +394,13 @@ export function ComposeModal() {
               title="Enquete"
               style={modoEnquete ? { background: "var(--primaria-fundo)" } : undefined}
               onClick={() => setModoEnquete((v) => !v)}
+              disabled={ehPedido || !!versiculo}
             >
               <IconEnquete />
             </button>
           </div>
           <button className="botao-publicar-final" disabled={!podePublicar || enviando} onClick={handlePublicar}>
-            {enviando ? "Publicando…" : "Publicar"}
+            {enviando ? "Publicando…" : ehPedido ? "Partilhar pedido" : versiculo ? "Publicar reflexão" : "Publicar"}
           </button>
         </div>
       </div>

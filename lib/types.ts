@@ -27,7 +27,7 @@ export interface Post {
   mesaId: string | null;
   mesaNome: string | null;
   mesaEmoji: string | null;
-  tipo: "texto" | "enquete";
+  tipo: "texto" | "enquete" | "oracao";
   texto: string | null;
   pergunta: string | null;
   imagemUrl: string | null;
@@ -36,14 +36,39 @@ export interface Post {
   linkDescricao: string | null;
   linkImagem: string | null;
   linkDominio: string | null;
+  /** reflexão sobre o versículo do dia, quando preenchido */
+  versiculoId: string | null;
+  versiculoReferencia: string | null;
   curtidasCount: number;
   comentariosCount: number;
+  oracoesCount: number;
   euCurti: boolean;
+  euOrei: boolean;
   minhaOpcaoId: string | null;
   euSalvei: boolean;
   criadoEm: string;
   /** preenchido só para posts de enquete */
   opcoes?: OpcaoEnquete[];
+}
+
+/** O versículo de hoje — o mesmo para todo mundo. */
+export interface VersiculoDoDia {
+  id: string;
+  referencia: string;
+  texto: string;
+  tema: string;
+  convite: string;
+  jaRefleti: boolean;
+  meuPostId: string | null;
+  reflexoesCount: number;
+}
+
+/** Alguém que está orando por um pedido. */
+export interface QuemOrou {
+  id: string;
+  nome: string;
+  arroba: string;
+  cor: string;
 }
 
 export interface Mesa {
@@ -143,7 +168,7 @@ export interface MensagemReal {
 
 export interface NotificacaoReal {
   id: string;
-  tipo: "curtida" | "comentario" | "seguidor" | "convite_mesa" | "mensagem";
+  tipo: "curtida" | "comentario" | "seguidor" | "convite_mesa" | "mensagem" | "oracao";
   atorId: string | null;
   atorNome: string | null;
   atorArroba: string | null;

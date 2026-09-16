@@ -31,7 +31,7 @@ export function NavMobile() {
     <nav className="nav-mobile">
       {item("/inicio", IconInicio)}
       {item("/explorar", IconExplorar)}
-      <button className="nav-mobile-item central" aria-label="Publicar" onClick={abrirComposer}>
+      <button className="nav-mobile-item central" aria-label="Publicar" onClick={() => abrirComposer()}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
           <circle cx="12" cy="12" r="10" />
           <path d="M12 8v8M8 12h8" />

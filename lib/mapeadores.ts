@@ -4,6 +4,7 @@ import type {
   Mesa,
   OpcaoEnquete,
   PerfilPublico,
+  VersiculoDoDia,
   PessoaSugerida,
   Post,
   ResultadoBusca,
@@ -24,10 +25,12 @@ type LinhaPost = {
   mesa_id: string | null;
   mesa_nome: string | null;
   mesa_emoji: string | null;
-  tipo: "texto" | "enquete";
+  tipo: "texto" | "enquete" | "oracao";
   texto: string | null;
   pergunta: string | null;
   imagem_url: string | null;
+  versiculo_id?: string | null;
+  versiculo_referencia?: string | null;
   link_url: string | null;
   link_titulo: string | null;
   link_descricao: string | null;
@@ -35,7 +38,9 @@ type LinhaPost = {
   link_dominio: string | null;
   curtidas_count: number;
   comentarios_count: number;
+  oracoes_count?: number;
   eu_curti: boolean;
+  eu_orei?: boolean;
   minha_opcao_id: string | null;
   eu_salvei: boolean;
   criado_em: string;
@@ -60,9 +65,13 @@ export function mapearPost(l: LinhaPost): Post {
     linkDescricao: l.link_descricao,
     linkImagem: l.link_imagem,
     linkDominio: l.link_dominio,
+    versiculoId: l.versiculo_id ?? null,
+    versiculoReferencia: l.versiculo_referencia ?? null,
     curtidasCount: l.curtidas_count,
     comentariosCount: l.comentarios_count,
+    oracoesCount: Number(l.oracoes_count ?? 0),
     euCurti: l.eu_curti,
+    euOrei: l.eu_orei ?? false,
     minhaOpcaoId: l.minha_opcao_id,
     euSalvei: l.eu_salvei,
     criadoEm: l.criado_em,
@@ -170,6 +179,28 @@ export function mapearPerfilPublico(l: {
     haBloqueio: l.ha_bloqueio,
     amigosEmComum: Number(l.amigos_em_comum ?? 0),
     conversaId: l.conversa_id,
+  };
+}
+
+export function mapearVersiculo(l: {
+  id: string;
+  referencia: string;
+  texto: string;
+  tema: string;
+  convite: string;
+  ja_refleti: boolean;
+  meu_post_id: string | null;
+  reflexoes_count: number;
+}): VersiculoDoDia {
+  return {
+    id: l.id,
+    referencia: l.referencia,
+    texto: l.texto,
+    tema: l.tema,
+    convite: l.convite,
+    jaRefleti: l.ja_refleti,
+    meuPostId: l.meu_post_id,
+    reflexoesCount: Number(l.reflexoes_count ?? 0),
   };
 }
 

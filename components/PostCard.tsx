@@ -8,6 +8,7 @@ import { dividirTextoComLinks } from "@/lib/links";
 import type { Post } from "@/lib/types";
 import { AvatarPessoa, LinkPessoa } from "./LinkPessoa";
 import { ComentariosDoPost } from "./ComentariosDoPost";
+import { BotaoOracao } from "./BotaoOracao";
 import { IconCoracao, IconComentar, IconCompartilhar, IconMais, IconSalvos, IconLink } from "./icons";
 
 const MOTIVOS: { valor: MotivoDenuncia; label: string }[] = [
@@ -28,6 +29,7 @@ export function PostCard({ post }: { post: Post }) {
 
   const souEuOAutor = perfil?.id === post.autorId;
   const jaVotou = post.minhaOpcaoId !== null;
+  const ehPedido = post.tipo === "oracao";
 
   function handleCurtir() {
     curtirPost(post.id);
@@ -54,7 +56,7 @@ export function PostCard({ post }: { post: Post }) {
   }
 
   return (
-    <article className="post" id={`post-${post.id}`}>
+    <article className={`post ${ehPedido ? "post-pedido" : ""}`} id={`post-${post.id}`}>
       <AvatarPessoa arroba={post.autorArroba} nome={post.autorNome} cor={post.autorCor} tamanho={46} />
       <div className="post-corpo">
         <div className="post-cabecalho">
@@ -63,6 +65,10 @@ export function PostCard({ post }: { post: Post }) {
           <span className="tempo">· {tempoRelativo(post.criadoEm)}</span>
           {post.mesaNome ? (
             <span className="tempo">· em {post.mesaEmoji} {post.mesaNome}</span>
+          ) : null}
+          {ehPedido ? <span className="etiqueta-pedido">Pedido de oração</span> : null}
+          {post.versiculoReferencia ? (
+            <span className="etiqueta-reflexao">refletindo sobre {post.versiculoReferencia}</span>
           ) : null}
 
           <div style={{ position: "relative", marginLeft: "auto" }}>
@@ -193,14 +199,20 @@ export function PostCard({ post }: { post: Post }) {
           </a>
         ) : null}
 
+        {ehPedido ? <BotaoOracao post={post} /> : null}
+
         <div className="post-acoes">
-          <button
-            className={`acao-post ${post.euCurti ? "curtido" : ""} ${curtindoAnim ? "acabou-curtir" : ""}`}
-            onClick={handleCurtir}
-          >
-            <span className="curtir-anim"><IconCoracao /></span>
-            <span>{post.curtidasCount}</span>
-          </button>
+          {/* num pedido de oração o coração sai de cena: o retorno certo
+              ali é "estou orando", logo acima — não uma curtida. */}
+          {!ehPedido ? (
+            <button
+              className={`acao-post ${post.euCurti ? "curtido" : ""} ${curtindoAnim ? "acabou-curtir" : ""}`}
+              onClick={handleCurtir}
+            >
+              <span className="curtir-anim"><IconCoracao /></span>
+              <span>{post.curtidasCount}</span>
+            </button>
+          ) : null}
           <button className="acao-post" onClick={() => setComentariosAbertos((v) => !v)}>
             <IconComentar /><span>{post.comentariosCount}</span>
           </button>

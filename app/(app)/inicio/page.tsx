@@ -5,6 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
 import { SugestoesDeMesa } from "@/components/SugestoesDeMesa";
+import { VersiculoDoDia } from "@/components/VersiculoDoDia";
 import { IconFoto, IconVideo, IconEnquete } from "@/components/icons";
 
 export default function InicioPage() {
@@ -17,7 +18,9 @@ export default function InicioPage() {
         <h2>O que está despertando em você hoje?</h2>
       </div>
 
-      <div className="composer" onClick={abrirComposer} style={{ cursor: "pointer" }}>
+      <VersiculoDoDia />
+
+      <div className="composer" onClick={() => abrirComposer()} style={{ cursor: "pointer" }}>
         <div className="composer-topo">
           <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} tamanho={44} />
           <textarea
@@ -33,9 +36,17 @@ export default function InicioPage() {
             <button className="icone-acao" title="Vídeo"><IconVideo /></button>
             <button className="icone-acao" title="Enquete"><IconEnquete /></button>
           </div>
-          <button className="botao-publicar-final" style={{ padding: "9px 22px" }}>
-            Publicar
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="botao-mini"
+              onClick={(e) => { e.stopPropagation(); abrirComposer({ tipo: "oracao" }); }}
+            >
+              🙏 Pedir oração
+            </button>
+            <button className="botao-publicar-final" style={{ padding: "9px 22px" }}>
+              Publicar
+            </button>
+          </div>
         </div>
       </div>
 
