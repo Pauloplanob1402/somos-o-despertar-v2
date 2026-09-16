@@ -64,6 +64,13 @@ export const IconAudio = (p: IconProps) => (
 export const IconVoltar = (p: IconProps) => (
   <svg {...base({ strokeWidth: 2, ...p })}><path d="m15 18-6-6 6-6" /></svg>
 );
+export const IconLink = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M9.5 14.5 14.5 9.5" />
+    <path d="M10.5 7.5 12 6a3.5 3.5 0 0 1 5 5l-1.5 1.5" />
+    <path d="M13.5 16.5 12 18a3.5 3.5 0 0 1-5-5l1.5-1.5" />
+  </svg>
+);
 export const IconFechar = (p: IconProps) => (
   <svg {...base({ strokeWidth: 2, ...p })}><path d="M6 6l12 12M18 6 6 18" /></svg>
 );

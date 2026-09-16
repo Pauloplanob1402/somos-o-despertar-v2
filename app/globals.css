@@ -369,6 +369,108 @@ input, textarea { font-family: inherit; }
   border: 1px solid var(--borda);
   overflow: hidden;
 }
+
+/* --- pré-visualização de link (composer e post publicado) --- */
+.link-previa {
+  margin-top: 12px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  overflow: hidden;
+  display: flex;
+  position: relative;
+  background: var(--bg-elevado);
+}
+.post-link-previa {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.post-link-previa:hover { border-color: var(--borda-forte); }
+.link-previa-imagem {
+  width: 120px;
+  min-width: 120px;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+  background: var(--primaria-fundo);
+}
+.link-previa-imagem-vazia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--texto-fraco);
+}
+.link-previa-imagem-vazia svg { width: 28px; height: 28px; }
+.link-previa-texto {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 14px;
+  min-width: 0;
+}
+.link-previa-dominio {
+  color: var(--texto-fraco);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.link-previa-titulo {
+  font-weight: 700;
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.link-previa-descricao {
+  color: var(--texto-fraco);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.link-previa-remover {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.link-previa-remover svg { width: 14px; height: 14px; }
+.link-previa-carregando {
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  color: var(--texto-fraco);
+  font-size: 13.5px;
+}
+.link-previa-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--borda-forte);
+  border-top-color: var(--texto-fraco);
+  animation: girar 0.7s linear infinite;
+}
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+.post-texto a.link-inline {
+  color: var(--primaria);
+  text-decoration: underline;
+  word-break: break-word;
+}
 .post-imagem-bloco {
   height: 210px;
   display: flex;

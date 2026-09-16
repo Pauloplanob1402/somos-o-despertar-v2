@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useApp, type MotivoDenuncia } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { tempoRelativo } from "@/lib/mapeadores";
+import { dividirTextoComLinks } from "@/lib/links";
 import type { Post } from "@/lib/types";
 import { Avatar } from "./Avatar";
 import { ComentariosDoPost } from "./ComentariosDoPost";
-import { IconCoracao, IconComentar, IconCompartilhar, IconMais, IconSalvos } from "./icons";
+import { IconCoracao, IconComentar, IconCompartilhar, IconMais, IconSalvos, IconLink } from "./icons";
 
 const MOTIVOS: { valor: MotivoDenuncia; label: string }[] = [
   { valor: "spam", label: "Spam ou propaganda" },
@@ -107,7 +108,26 @@ export function PostCard({ post }: { post: Post }) {
           </div>
         </div>
 
-        {post.texto ? <p className="post-texto">{post.texto}</p> : null}
+        {post.texto ? (
+          <p className="post-texto">
+            {dividirTextoComLinks(post.texto).map((parte, i) =>
+              parte.tipo === "link" ? (
+                <a
+                  key={i}
+                  href={parte.conteudo}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow ugc"
+                  className="link-inline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {parte.conteudo}
+                </a>
+              ) : (
+                <span key={i}>{parte.conteudo}</span>
+              )
+            )}
+          </p>
+        ) : null}
 
         {post.tipo === "enquete" ? (
           <>
@@ -145,6 +165,32 @@ export function PostCard({ post }: { post: Post }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={post.imagemUrl} alt="" style={{ width: "100%", display: "block" }} />
           </div>
+        ) : null}
+
+        {post.linkUrl ? (
+          <a
+            className="link-previa post-link-previa"
+            href={post.linkUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow ugc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {post.linkImagem ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={post.linkImagem} alt="" className="link-previa-imagem" />
+            ) : (
+              <div className="link-previa-imagem link-previa-imagem-vazia">
+                <IconLink />
+              </div>
+            )}
+            <div className="link-previa-texto">
+              <span className="link-previa-dominio">{post.linkDominio}</span>
+              <span className="link-previa-titulo">{post.linkTitulo}</span>
+              {post.linkDescricao ? (
+                <span className="link-previa-descricao">{post.linkDescricao}</span>
+              ) : null}
+            </div>
+          </a>
         ) : null}
 
         <div className="post-acoes">

@@ -1,14 +1,23 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { createClient } from "@/lib/supabase/client";
+import { encontrarPrimeiraUrl } from "@/lib/links";
 import { Avatar } from "./Avatar";
-import { IconFechar, IconFoto, IconVideo, IconEnquete } from "./icons";
+import { IconFechar, IconFoto, IconVideo, IconEnquete, IconLink } from "./icons";
 
 const TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024; // 5 MB
 const TIPOS_ACEITOS = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+interface PreviaLink {
+  url: string;
+  titulo: string;
+  descricao: string | null;
+  imagem: string | null;
+  dominio: string;
+}
 
 export function ComposeModal() {
   const { composerAberto, fecharComposer, publicarPost, mesas } = useApp();
@@ -26,6 +35,65 @@ export function ComposeModal() {
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const inputArquivoRef = useRef<HTMLInputElement>(null);
 
+  // pré-visualização de link: buscamos os dados só quando a pessoa para
+  // de digitar (debounce) e mantemos controle de qual URL ela já
+  // dispensou, pra não ficar reaparecendo o card sozinho.
+  const [previaLink, setPreviaLink] = useState<PreviaLink | null>(null);
+  const [carregandoLink, setCarregandoLink] = useState(false);
+  const [linkDispensado, setLinkDispensado] = useState<string | null>(null);
+  const urlEmBuscaRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (modoEnquete) return;
+    const url = encontrarPrimeiraUrl(texto);
+
+    if (!url) {
+      setPreviaLink(null);
+      setCarregandoLink(false);
+      setLinkDispensado(null);
+      return;
+    }
+    if (url === previaLink?.url || url === linkDispensado) return;
+
+    const timer = setTimeout(async () => {
+      urlEmBuscaRef.current = url;
+      setCarregandoLink(true);
+      try {
+        const resp = await fetch("/api/link-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const dados = await resp.json();
+        // se o texto mudou de novo enquanto a busca rodava, ignora a resposta
+        if (urlEmBuscaRef.current !== url) return;
+        if (!resp.ok || dados.erro) {
+          setPreviaLink(null);
+        } else {
+          setPreviaLink({
+            url: dados.url,
+            titulo: dados.titulo,
+            descricao: dados.descricao,
+            imagem: dados.imagem,
+            dominio: dados.dominio,
+          });
+        }
+      } catch {
+        if (urlEmBuscaRef.current === url) setPreviaLink(null);
+      } finally {
+        if (urlEmBuscaRef.current === url) setCarregandoLink(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [texto, modoEnquete]);
+
+  function dispensarLink() {
+    if (previaLink) setLinkDispensado(previaLink.url);
+    setPreviaLink(null);
+  }
+
   if (!composerAberto) return null;
 
   const opcoesValidas = opcoes.filter((o) => o.trim().length > 0);
@@ -40,6 +108,10 @@ export function ComposeModal() {
     setModoEnquete(false);
     setMesaId("");
     removerImagem();
+    setPreviaLink(null);
+    setCarregandoLink(false);
+    setLinkDispensado(null);
+    urlEmBuscaRef.current = null;
   }
 
   function handleFechar() {
@@ -105,7 +177,12 @@ export function ComposeModal() {
     const { erro } = await publicarPost(
       modoEnquete
         ? { pergunta: pergunta.trim(), opcoes: opcoesValidas.map((o) => o.trim()), mesaId: mesaId || null }
-        : { texto: texto.trim() || undefined, mesaId: mesaId || null, imagemUrl }
+        : {
+            texto: texto.trim() || undefined,
+            mesaId: mesaId || null,
+            imagemUrl,
+            link: previaLink,
+          }
     );
 
     setEnviando(false);
@@ -190,6 +267,41 @@ export function ComposeModal() {
 
               {erroImagem ? (
                 <p style={{ color: "#C0284C", fontSize: 12.5, marginTop: 8 }}>{erroImagem}</p>
+              ) : null}
+
+              {!modoEnquete && carregandoLink ? (
+                <div className="link-previa link-previa-carregando">
+                  <div className="link-previa-spinner" />
+                  <span>Buscando prévia do link…</span>
+                </div>
+              ) : null}
+
+              {!modoEnquete && previaLink ? (
+                <div className="link-previa">
+                  {previaLink.imagem ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={previaLink.imagem} alt="" className="link-previa-imagem" />
+                  ) : (
+                    <div className="link-previa-imagem link-previa-imagem-vazia">
+                      <IconLink />
+                    </div>
+                  )}
+                  <div className="link-previa-texto">
+                    <span className="link-previa-dominio">{previaLink.dominio}</span>
+                    <span className="link-previa-titulo">{previaLink.titulo}</span>
+                    {previaLink.descricao ? (
+                      <span className="link-previa-descricao">{previaLink.descricao}</span>
+                    ) : null}
+                  </div>
+                  <button
+                    className="link-previa-remover"
+                    onClick={dispensarLink}
+                    title="Remover prévia"
+                    type="button"
+                  >
+                    <IconFechar />
+                  </button>
+                </div>
               ) : null}
 
               {minhasMesas.length > 0 ? (

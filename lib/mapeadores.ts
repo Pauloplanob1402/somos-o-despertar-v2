@@ -27,6 +27,11 @@ type LinhaPost = {
   texto: string | null;
   pergunta: string | null;
   imagem_url: string | null;
+  link_url: string | null;
+  link_titulo: string | null;
+  link_descricao: string | null;
+  link_imagem: string | null;
+  link_dominio: string | null;
   curtidas_count: number;
   comentarios_count: number;
   eu_curti: boolean;
@@ -49,6 +54,11 @@ export function mapearPost(l: LinhaPost): Post {
     texto: l.texto,
     pergunta: l.pergunta,
     imagemUrl: l.imagem_url,
+    linkUrl: l.link_url,
+    linkTitulo: l.link_titulo,
+    linkDescricao: l.link_descricao,
+    linkImagem: l.link_imagem,
+    linkDominio: l.link_dominio,
     curtidasCount: l.curtidas_count,
     comentariosCount: l.comentarios_count,
     euCurti: l.eu_curti,

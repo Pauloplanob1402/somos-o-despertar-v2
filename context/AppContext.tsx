@@ -35,6 +35,13 @@ interface AppContextValue {
     opcoes?: string[];
     mesaId?: string | null;
     imagemUrl?: string | null;
+    link?: {
+      url: string;
+      titulo: string;
+      descricao: string | null;
+      imagem: string | null;
+      dominio: string;
+    } | null;
   }) => Promise<{ erro: string | null }>;
 
   // mesas
@@ -201,6 +208,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       opcoes?: string[];
       mesaId?: string | null;
       imagemUrl?: string | null;
+      link?: {
+        url: string;
+        titulo: string;
+        descricao: string | null;
+        imagem: string | null;
+        dominio: string;
+      } | null;
     }) => {
       const { error } = await supabase.rpc("criar_post", {
         p_texto: dados.texto ?? null,
@@ -208,6 +222,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         p_opcoes: dados.opcoes ?? null,
         p_mesa_id: dados.mesaId ?? null,
         p_imagem_url: dados.imagemUrl ?? null,
+        p_link_url: dados.link?.url ?? null,
+        p_link_titulo: dados.link?.titulo ?? null,
+        p_link_descricao: dados.link?.descricao ?? null,
+        p_link_imagem: dados.link?.imagem ?? null,
+        p_link_dominio: dados.link?.dominio ?? null,
       });
 
       if (error) {

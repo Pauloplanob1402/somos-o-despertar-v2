@@ -31,6 +31,11 @@ export interface Post {
   texto: string | null;
   pergunta: string | null;
   imagemUrl: string | null;
+  linkUrl: string | null;
+  linkTitulo: string | null;
+  linkDescricao: string | null;
+  linkImagem: string | null;
+  linkDominio: string | null;
   curtidasCount: number;
   comentariosCount: number;
   euCurti: boolean;
