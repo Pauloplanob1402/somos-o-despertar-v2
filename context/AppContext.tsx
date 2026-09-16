@@ -34,7 +34,8 @@ interface AppContextValue {
     pergunta?: string;
     opcoes?: string[];
     mesaId?: string | null;
-  }) => Promise<void>;
+    imagemUrl?: string | null;
+  }) => Promise<{ erro: string | null }>;
 
   // mesas
   mesas: Mesa[];
@@ -194,21 +195,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const publicarPost = useCallback(
-    async (dados: { texto?: string; pergunta?: string; opcoes?: string[]; mesaId?: string | null }) => {
+    async (dados: {
+      texto?: string;
+      pergunta?: string;
+      opcoes?: string[];
+      mesaId?: string | null;
+      imagemUrl?: string | null;
+    }) => {
       const { error } = await supabase.rpc("criar_post", {
         p_texto: dados.texto ?? null,
         p_pergunta: dados.pergunta ?? null,
         p_opcoes: dados.opcoes ?? null,
         p_mesa_id: dados.mesaId ?? null,
+        p_imagem_url: dados.imagemUrl ?? null,
       });
 
       if (error) {
         mostrarToast(error.message || "Não foi possível publicar.");
-        return;
+        return { erro: error.message };
       }
       setComposerAberto(false);
       mostrarToast("Publicação criada");
       await recarregarFeed();
+      return { erro: null };
     },
     [supabase, mostrarToast, recarregarFeed]
   );

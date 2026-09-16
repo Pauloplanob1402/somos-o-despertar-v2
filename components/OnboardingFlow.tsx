@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { INTERESSES_ONBOARDING } from "@/lib/constantes";
 
@@ -50,6 +51,12 @@ export function OnboardingFlow() {
             <button className="botao-primario" onClick={() => setPasso(1)}>
               Entrar na jornada
             </button>
+            <p style={{ marginTop: 20, fontSize: 13.5, color: "rgba(255,255,255,0.55)" }}>
+              Já tem conta?{" "}
+              <Link href="/entrar" style={{ color: "#DCAE6C", textDecoration: "underline" }}>
+                Entrar
+              </Link>
+            </p>
           </div>
         ) : (
           <div className="onboarding-passo ativa">

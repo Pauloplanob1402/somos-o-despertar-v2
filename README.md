@@ -61,13 +61,60 @@ caso mais óbvio de abuso a custo zero de infraestrutura.
   registradas e visíveis só pra quem denunciou. Revisar e agir sobre
   elas exigiria uma *role* de moderador (RLS específico) e uma tela — dá
   pra construir em cima do que já existe quando houver equipe de verdade.
-- **Upload de foto/vídeo**: os botões existem no composer, mas landing
-  de mídia precisa do Supabase Storage (bucket + política de upload).
 - **Criar grupo** de mensagens pela interface: o schema já suporta desde
   a Etapa 4, só falta o botão.
 - **Rate limiting de verdade** (por IP/conta, na borda): a trava de 15s
   em `criar_post` cobre o básico; produção séria normalmente usa algo
   como Vercel Firewall ou Upstash Ratelimit na frente da API.
+
+## Depois da Etapa 6 — login para quem já tem conta, e upload de imagem
+
+Duas coisas que ficaram pendentes na primeira versão da Etapa 6.
+
+### Tela de entrar (`/entrar`)
+
+Até aqui só existia um jeito de virar "permanente": reivindicar a
+sessão anônima atual (`CompletarCadastro`, no Perfil). Isso resolve o
+primeiro acesso, mas não resolve **voltar** — se a pessoa reivindicasse
+a conta no celular e depois abrisse o site no computador, caía numa
+conta anônima nova, sem ligação com a de antes.
+
+`/entrar` resolve isso: é uma tela de login de verdade (Google ou link
+por e-mail) que **troca** a sessão atual pela de uma conta já existente,
+em vez de ligar uma conta nova à sessão anônima. Tem um link "Já tem
+conta? Entrar" na tela de boas-vindas.
+
+### Upload de imagem (Supabase Storage)
+
+O botão de foto no composer agora funciona de verdade: escolhe uma
+imagem (até 5 MB, JPG/PNG/WEBP/GIF), mostra uma prévia, e no publicar
+ela sobe pro bucket `midias` do Supabase Storage antes do post ser
+criado. A política de RLS do bucket (migration `0015`) só deixa cada
+pessoa enviar arquivo dentro da própria pasta (`{seu_id}/arquivo.jpg`)
+— testei isso tentando subir um arquivo na pasta de outra pessoa
+propositalmente, e o Postgres bloqueou. Leitura é pública (assim a
+imagem aparece pra todo mundo no feed).
+
+**Vídeo continua sem suporte, de propósito** — não é só "mais uma linha
+de código igual à de imagem", tem implicações reais de custo e
+experiência que valem uma decisão consciente antes de construir:
+
+- Um vídeo de alguns segundos facilmente pesa 10-50x mais que uma foto.
+  O plano free do Supabase tem só 1 GB de armazenamento e 5 GB de banda
+  por mês (como vimos lá no começo) — um punhado de vídeos populares
+  pode consumir isso tudo num único dia.
+- O Storage do Supabase só **guarda e serve** o arquivo like — sem
+  compressão, sem redimensionar pra diferentes conexões, sem gerar
+  thumbnail. Pra vídeo isso importa muito mais do que pra foto: sem
+  processamento, alguém no 4G vai baixar o arquivo bruto inteiro antes
+  de conseguir assistir.
+- Serviços feitos pra isso (Mux, Cloudflare Stream, Cloudinary) resolvem
+  compressão/streaming adaptativo, mas custam à parte do Supabase.
+
+Dá pra fazer uma versão simples (upload bruto, com limite de tamanho
+curto — tipo 15-30 segundos) igual à de imagem, sabendo dessas
+limitações. Ou vale esperar até o app ter uso real pra decidir com dado
+de verdade quanto isso custaria.
 
 ## Etapa 5 — Algoritmo do feed & Gemini
 
@@ -182,9 +229,27 @@ ser temporária.
 | `lib/supabase/client.ts` | Cliente Supabase para Client Components |
 | `lib/supabase/server.ts` | Cliente Supabase para Server Components / Route Handlers |
 | `lib/supabase/middleware.ts` + `middleware.ts` | Renova a sessão a cada request e provisiona sessão anônima se ninguém estiver logado |
-| `context/AuthContext.tsx` | `useAuth()` — expõe `user`, `perfil`, `ehAnonimo`, e as funções `entrarComGoogle`, `enviarLinkPorEmail`, `atualizarPerfil`, `sair` |
+| `context/AuthContext.tsx` | `useAuth()` — sessão, perfil, e as ações de reivindicar conta e entrar (ver tabela abaixo) |
 | `app/auth/callback/route.ts` | Troca o código do OAuth/e-mail por uma sessão de verdade |
 | `components/CompletarCadastro.tsx` | Card na aba Perfil pra reivindicar a conta (some sozinho depois que a pessoa faz isso) |
+| `app/entrar/page.tsx` | Tela de login separada, pra quem **já** tem conta (ver abaixo) |
+
+`AuthContext` tem duas duplas de funções que parecem parecidas mas fazem
+coisas diferentes — vale entender a diferença:
+
+| Função | Quando usar | O que faz |
+|---|---|---|
+| `entrarComGoogle()` / `enviarLinkPorEmail()` | Card "Salve seu progresso" no Perfil (`CompletarCadastro`) | **Liga** uma conta permanente à sessão anônima atual. Mesmo `id`, mesmo histórico — só deixa de ser temporária. |
+| `entrarComGoogleDireto()` / `entrarComEmailExistente()` | Tela `/entrar` | **Troca** a sessão atual pela de uma conta que já existe — é o que alguém usa num aparelho novo, ou depois de dar Sair. |
+
+Duas coisas específicas de `entrarComEmailExistente`: usa
+`shouldCreateUser: false`, então se o e-mail não tiver uma conta ainda,
+devolve "Não encontramos uma conta com esse e-mail" em vez de criar uma
+— criar conta é papel do fluxo de reivindicar, não do de entrar. Já
+`entrarComGoogleDireto` **não tem** essa trava (o Supabase não oferece
+essa opção pra OAuth): se a pessoa nunca usou aquele Google no app, ele
+cria uma conta nova. Na prática isso raramente é um problema — é o
+comportamento normal de "Continuar com Google" na maioria dos apps.
 
 A Sidebar, o composer e a aba Perfil já usam o perfil **real** vindo do
 Supabase (nome, arroba, bio, cor, contadores) em vez do mock `EU` de
@@ -240,6 +305,7 @@ desde a criação — nada fica aberto por padrão.
 | `0012_feed.sql` | (Etapa 5) Ranking do feed, posts por perfil/mesa, opções de enquete com %, `criar_post` |
 | `0013_descoberta.sql` | (Etapa 5) Mesas, membros, pessoas sugeridas, busca, "em alta", comentários |
 | `0014_moderacao_e_salvos.sql` | (Etapa 6) Bloqueios, denúncias, posts ocultos, Guardados, trava de spam |
+| `0015_storage_e_imagens.sql` | Bucket de mídia + RLS de upload; `criar_post` ganha `imagem_url` |
 
 `supabase/seed.sql` já povoa as 5 mesas do protótipo. Perfis e posts de
 teste só podem ser criados depois que existir pelo menos um usuário real
@@ -326,7 +392,8 @@ supabase/seed.sql              → as 5 mesas iniciais
 
 - **Painel de moderação para equipe/staff** — hoje as denúncias ficam
   registradas e visíveis só pra quem denunciou.
-- **Upload de foto/vídeo** — os botões existem, falta o Supabase Storage.
+- **Upload de vídeo** — ver a seção "Depois da Etapa 6" acima; decisão
+  consciente pendente sobre custo/experiência, não uma tarefa esquecida.
 - **Criar grupo** de mensagens pela interface — o schema já suporta.
 - **Rate limiting na borda** (Vercel Firewall / Upstash) — a trava de 15s
   em `criar_post` cobre só o caso mais básico.

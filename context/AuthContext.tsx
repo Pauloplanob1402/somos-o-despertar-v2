@@ -33,6 +33,8 @@ interface AuthContextValue {
 
   entrarComGoogle: () => Promise<{ erro: string | null }>;
   enviarLinkPorEmail: (email: string) => Promise<{ erro: string | null }>;
+  entrarComGoogleDireto: () => Promise<{ erro: string | null }>;
+  entrarComEmailExistente: (email: string) => Promise<{ erro: string | null }>;
   sair: () => Promise<void>;
   atualizarPerfil: (
     dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio">>
@@ -63,13 +65,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let ativo = true;
 
     async function iniciar() {
-      const {
-        data: { user: usuarioAtual },
-      } = await supabase.auth.getUser();
-      if (!ativo) return;
-      setUser(usuarioAtual);
-      if (usuarioAtual) await buscarPerfil(usuarioAtual.id);
-      if (ativo) setCarregando(false);
+      try {
+        const {
+          data: { user: usuarioAtual },
+        } = await supabase.auth.getUser();
+        if (!ativo) return;
+        setUser(usuarioAtual);
+        if (usuarioAtual) await buscarPerfil(usuarioAtual.id);
+      } catch (e) {
+        // Sem isso, qualquer falha aqui (rede, projeto Supabase mal
+        // configurado, etc.) deixava a tela travada em "carregando"
+        // pra sempre, sem nenhum aviso — o setCarregando(false) nunca
+        // era alcançado porque a função tinha lançado uma exceção antes.
+        console.error("Falha ao iniciar sessão:", e);
+      } finally {
+        if (ativo) setCarregando(false);
+      }
     }
     iniciar();
 
@@ -122,6 +133,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/";
   }, [supabase]);
 
+  // ---------------------------------------------------------------------
+  // "Entrar" de verdade (tela /entrar): diferente de entrarComGoogle
+  // (que LIGA uma conta permanente à sessão anônima atual), estas duas
+  // funções TROCAM a sessão atual pela de uma conta que já existe —
+  // é o que alguém usa num aparelho novo, ou depois de sair.
+  // ---------------------------------------------------------------------
+  const entrarComGoogleDireto = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    return { erro: error?.message ?? null };
+  }, [supabase]);
+
+  const entrarComEmailExistente = useCallback(
+    async (email: string) => {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error?.message?.toLowerCase().includes("signups not allowed")) {
+        return { erro: "Não encontramos uma conta com esse e-mail." };
+      }
+      return { erro: error?.message ?? null };
+    },
+    [supabase]
+  );
+
   const atualizarPerfil = useCallback(
     async (dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio">>) => {
       if (!user) return { erro: "Sem sessão ativa." };
@@ -144,10 +188,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ehAnonimo,
       entrarComGoogle,
       enviarLinkPorEmail,
+      entrarComGoogleDireto,
+      entrarComEmailExistente,
       sair,
       atualizarPerfil,
     }),
-    [user, perfil, carregando, ehAnonimo, entrarComGoogle, enviarLinkPorEmail, sair, atualizarPerfil]
+    [
+      user, perfil, carregando, ehAnonimo,
+      entrarComGoogle, enviarLinkPorEmail,
+      entrarComGoogleDireto, entrarComEmailExistente,
+      sair, atualizarPerfil,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

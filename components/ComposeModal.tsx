@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
+import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "./Avatar";
 import { IconFechar, IconFoto, IconVideo, IconEnquete } from "./icons";
 
+const TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024; // 5 MB
+const TIPOS_ACEITOS = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
 export function ComposeModal() {
   const { composerAberto, fecharComposer, publicarPost, mesas } = useApp();
-  const { perfil } = useAuth();
+  const { perfil, user } = useAuth();
 
   const [texto, setTexto] = useState("");
   const [modoEnquete, setModoEnquete] = useState(false);
@@ -17,13 +21,17 @@ export function ComposeModal() {
   const [mesaId, setMesaId] = useState<string>("");
   const [enviando, setEnviando] = useState(false);
 
+  const [arquivoImagem, setArquivoImagem] = useState<File | null>(null);
+  const [previaImagem, setPreviaImagem] = useState<string | null>(null);
+  const [erroImagem, setErroImagem] = useState<string | null>(null);
+  const inputArquivoRef = useRef<HTMLInputElement>(null);
+
   if (!composerAberto) return null;
 
-  const minhasMesas = mesas.filter((m) => m.euParticipo);
   const opcoesValidas = opcoes.filter((o) => o.trim().length > 0);
   const podePublicar = modoEnquete
     ? pergunta.trim().length > 0 && opcoesValidas.length >= 2
-    : texto.trim().length > 0;
+    : texto.trim().length > 0 || !!arquivoImagem;
 
   function limpar() {
     setTexto("");
@@ -31,6 +39,7 @@ export function ComposeModal() {
     setOpcoes(["", ""]);
     setModoEnquete(false);
     setMesaId("");
+    removerImagem();
   }
 
   function handleFechar() {
@@ -38,17 +47,74 @@ export function ComposeModal() {
     fecharComposer();
   }
 
+  function handleEscolherImagem() {
+    inputArquivoRef.current?.click();
+  }
+
+  function handleArquivoSelecionado(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo depois
+    if (!arquivo) return;
+
+    setErroImagem(null);
+
+    if (!TIPOS_ACEITOS.includes(arquivo.type)) {
+      setErroImagem("Use uma imagem JPG, PNG, WEBP ou GIF.");
+      return;
+    }
+    if (arquivo.size > TAMANHO_MAXIMO_IMAGEM) {
+      setErroImagem("A imagem precisa ter até 5 MB.");
+      return;
+    }
+
+    setArquivoImagem(arquivo);
+    setPreviaImagem(URL.createObjectURL(arquivo));
+  }
+
+  function removerImagem() {
+    if (previaImagem) URL.revokeObjectURL(previaImagem);
+    setArquivoImagem(null);
+    setPreviaImagem(null);
+    setErroImagem(null);
+  }
+
   async function handlePublicar() {
-    if (!podePublicar) return;
+    if (!podePublicar || !user) return;
     setEnviando(true);
-    await publicarPost(
+
+    let imagemUrl: string | null = null;
+
+    if (arquivoImagem) {
+      const extensao = arquivoImagem.name.split(".").pop() || "jpg";
+      const caminho = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`;
+      const supabase = createClient();
+
+      const { error: erroUpload } = await supabase.storage
+        .from("midias")
+        .upload(caminho, arquivoImagem, { contentType: arquivoImagem.type });
+
+      if (erroUpload) {
+        setEnviando(false);
+        setErroImagem("Não conseguimos enviar a imagem. Tenta de novo.");
+        return;
+      }
+
+      imagemUrl = supabase.storage.from("midias").getPublicUrl(caminho).data.publicUrl;
+    }
+
+    const { erro } = await publicarPost(
       modoEnquete
         ? { pergunta: pergunta.trim(), opcoes: opcoesValidas.map((o) => o.trim()), mesaId: mesaId || null }
-        : { texto: texto.trim(), mesaId: mesaId || null }
+        : { texto: texto.trim() || undefined, mesaId: mesaId || null, imagemUrl }
     );
+
     setEnviando(false);
-    limpar();
+    // só limpa o formulário se deu certo — antes disso, um erro (ex.: a
+    // trava de 15s entre posts) apagava o que a pessoa tinha escrito.
+    if (!erro) limpar();
   }
+
+  const minhasMesas = mesas.filter((m) => m.euParticipo);
 
   return (
     <div className="modal-fundo" onClick={handleFechar}>
@@ -105,6 +171,27 @@ export function ComposeModal() {
                 </div>
               )}
 
+              {!modoEnquete && previaImagem ? (
+                <div style={{ position: "relative", marginTop: 12, borderRadius: "var(--raio-md)", overflow: "hidden", border: "1px solid var(--borda)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={previaImagem} alt="Prévia da imagem" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} />
+                  <button
+                    onClick={removerImagem}
+                    style={{
+                      position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: "50%",
+                      background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", display: "flex",
+                      alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <IconFechar />
+                  </button>
+                </div>
+              ) : null}
+
+              {erroImagem ? (
+                <p style={{ color: "#C0284C", fontSize: 12.5, marginTop: 8 }}>{erroImagem}</p>
+              ) : null}
+
               {minhasMesas.length > 0 ? (
                 <select
                   value={mesaId}
@@ -132,8 +219,25 @@ export function ComposeModal() {
 
         <div className="modal-rodape">
           <div className="composer-acoes">
-            <button className="icone-acao" title="Foto" onClick={() => {}}><IconFoto /></button>
-            <button className="icone-acao" title="Vídeo" onClick={() => {}}><IconVideo /></button>
+            <input
+              ref={inputArquivoRef}
+              type="file"
+              accept={TIPOS_ACEITOS.join(",")}
+              onChange={handleArquivoSelecionado}
+              style={{ display: "none" }}
+            />
+            <button
+              className="icone-acao"
+              title="Foto"
+              onClick={handleEscolherImagem}
+              disabled={modoEnquete}
+              style={arquivoImagem ? { background: "var(--primaria-fundo)" } : undefined}
+            >
+              <IconFoto />
+            </button>
+            <button className="icone-acao" title="Vídeo em breve" disabled>
+              <IconVideo />
+            </button>
             <button
               className="icone-acao"
               title="Enquete"
