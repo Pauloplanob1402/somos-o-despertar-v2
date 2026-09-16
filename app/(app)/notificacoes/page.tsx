@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useNotificacoes } from "@/context/NotificacoesContext";
+import { AvatarPessoa, caminhoPerfil } from "@/components/LinkPessoa";
 import type { NotificacaoReal } from "@/lib/types";
 
 function tempoRelativo(iso: string): string {
@@ -14,21 +16,24 @@ function tempoRelativo(iso: string): string {
   return `${d} d`;
 }
 
-function detalhesNotificacao(n: NotificacaoReal): { icone: string; cor: string; texto: string } {
-  const nome = n.atorNome ?? "Alguém";
+/**
+ * Só o "miolo" do texto — o nome de quem agiu vira link pro perfil e é
+ * montado no JSX, por isso aqui sobra apenas o complemento da frase.
+ */
+function detalhesNotificacao(n: NotificacaoReal): { icone: string; cor: string; complemento: string } {
   switch (n.tipo) {
     case "curtida":
-      return { icone: "❤️", cor: "#F3E6DC", texto: `<b>${nome}</b> curtiu sua publicação.` };
+      return { icone: "❤️", cor: "#F3E6DC", complemento: "curtiu sua publicação." };
     case "comentario":
-      return { icone: "💬", cor: "#EDE7F0", texto: `<b>${nome}</b> comentou sua publicação.` };
+      return { icone: "💬", cor: "#EDE7F0", complemento: "comentou sua publicação." };
     case "seguidor":
-      return { icone: "👤", cor: "#FBF1DE", texto: `<b>${nome}</b> começou a seguir você.` };
+      return { icone: "👤", cor: "#FBF1DE", complemento: "começou a seguir você." };
     case "convite_mesa":
-      return { icone: "👥", cor: "#FBF1DE", texto: `Você foi convidado para a mesa <b>${n.mesaNome ?? ""}</b>.` };
+      return { icone: "👥", cor: "#FBF1DE", complemento: `convidou você para a mesa ${n.mesaNome ?? ""}.` };
     case "mensagem":
-      return { icone: "💬", cor: "#EDE7F0", texto: `<b>${nome}</b> enviou uma mensagem.` };
+      return { icone: "💬", cor: "#EDE7F0", complemento: "enviou uma mensagem." };
     default:
-      return { icone: "🔔", cor: "#EDE7F0", texto: "Nova notificação." };
+      return { icone: "🔔", cor: "#EDE7F0", complemento: "interagiu com você." };
   }
 }
 
@@ -53,12 +58,30 @@ export default function NotificacoesPage() {
       ) : (
         <div>
           {notificacoes.map((n) => {
-            const { icone, cor, texto } = detalhesNotificacao(n);
+            const { icone, cor, complemento } = detalhesNotificacao(n);
+            const nome = n.atorNome ?? "Alguém";
             return (
               <div className={`notificacao ${n.lida ? "" : "nao-lida"}`} key={n.id}>
                 <div className="notif-icone" style={{ background: cor }}>{icone}</div>
+                {n.atorArroba ? (
+                  <AvatarPessoa
+                    arroba={n.atorArroba}
+                    nome={nome}
+                    cor={n.atorCor ?? "#B8663F"}
+                    tamanho={38}
+                  />
+                ) : null}
                 <div>
-                  <div className="notif-texto" dangerouslySetInnerHTML={{ __html: texto }} />
+                  <div className="notif-texto">
+                    {n.atorArroba ? (
+                      <Link href={caminhoPerfil(n.atorArroba)} className="link-pessoa">
+                        <b>{nome}</b>
+                      </Link>
+                    ) : (
+                      <b>{nome}</b>
+                    )}{" "}
+                    {complemento}
+                  </div>
                   <div className="notif-tempo">{tempoRelativo(n.criadoEm)}</div>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { mapearBusca } from "@/lib/mapeadores";
 import type { ResultadoBusca } from "@/lib/types";
-import { Avatar } from "@/components/Avatar";
+import { AvatarPessoa, LinkPessoa } from "@/components/LinkPessoa";
 import { IconBuscar } from "@/components/icons";
 
 export default function BuscaPage() {
@@ -77,31 +77,40 @@ export default function BuscaPage() {
           {pessoas.length > 0 ? (
             <div className="busca-secao">
               <h4>Pessoas</h4>
-              {pessoas.map((p) => (
-                <div className="linha-pessoa" key={p.id}>
-                  <Avatar nome={p.titulo} cor={p.cor ?? "#B8663F"} tamanho={42} />
-                  <div className="linha-pessoa-info">
-                    <div className="nome">{p.titulo}</div>
-                    <div className="arroba">{p.subtitulo}</div>
-                    {p.detalhe ? <div className="bio">{p.detalhe}</div> : null}
+              {pessoas.map((p) => {
+                const arrobaPessoa = (p.subtitulo ?? "").replace(/^@/, "");
+                return (
+                  <div className="linha-pessoa" key={p.id}>
+                    <AvatarPessoa arroba={arrobaPessoa} nome={p.titulo} cor={p.cor ?? "#B8663F"} tamanho={42} />
+                    <div className="linha-pessoa-info">
+                      <LinkPessoa arroba={arrobaPessoa} className="nome">{p.titulo}</LinkPessoa>
+                      <LinkPessoa arroba={arrobaPessoa} className="arroba">{p.subtitulo}</LinkPessoa>
+                      {p.detalhe ? <div className="bio">{p.detalhe}</div> : null}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : null}
 
           {posts.length > 0 ? (
             <div className="busca-secao">
               <h4>Publicações</h4>
-              {posts.map((p) => (
-                <div className="linha-pessoa" key={p.id}>
-                  <Avatar nome={p.titulo} cor={p.cor ?? "#B8663F"} tamanho={42} />
-                  <div className="linha-pessoa-info">
-                    <div className="nome">{p.titulo} <span style={{ fontWeight: 400, color: "var(--texto-fraco)" }}>{p.subtitulo}</span></div>
-                    <div className="bio">{p.detalhe}</div>
+              {posts.map((p) => {
+                const arrobaAutor = (p.subtitulo ?? "").replace(/^@/, "");
+                return (
+                  <div className="linha-pessoa" key={p.id}>
+                    <AvatarPessoa arroba={arrobaAutor} nome={p.titulo} cor={p.cor ?? "#B8663F"} tamanho={42} />
+                    <div className="linha-pessoa-info">
+                      <div className="nome">
+                        <LinkPessoa arroba={arrobaAutor}>{p.titulo}</LinkPessoa>{" "}
+                        <span style={{ fontWeight: 400, color: "var(--texto-fraco)" }}>{p.subtitulo}</span>
+                      </div>
+                      <div className="bio">{p.detalhe}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : null}
         </div>

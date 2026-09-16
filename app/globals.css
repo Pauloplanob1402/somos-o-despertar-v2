@@ -1076,3 +1076,56 @@ input, textarea { font-family: inherit; }
 @media (min-width: 768px) {
   .conversa-cabecalho .voltar-mobile { display: none; }
 }
+
+/* =====================================================================
+   Perfil de outras pessoas (/perfil/[arroba])
+   Nome e avatar viraram links em todo o app — aqui eles continuam
+   parecendo texto normal até o hover, pra não poluir o feed de azul.
+   ===================================================================== */
+.link-pessoa {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.link-pessoa:hover { text-decoration: underline; }
+.link-pessoa:focus-visible {
+  outline: 2px solid var(--primaria);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* nas listas de pessoas, nome e arroba eram <div> (bloco) */
+.linha-pessoa-info .link-pessoa { display: block; }
+
+.perfil-avatar-wrap .avatar-wrap .avatar {
+  width: 92px;
+  height: 92px;
+  border: 4px solid var(--bg-elevado);
+}
+
+.perfil-stat-botao {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: var(--texto-fraco);
+}
+.perfil-stat-botao b { color: var(--texto); }
+.perfil-stat-botao:hover { text-decoration: underline; }
+
+.etiqueta-segue {
+  margin-left: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--raio-pill);
+  background: var(--primaria-fundo);
+  color: var(--texto-suave);
+  vertical-align: middle;
+}
+
+/* as abas do perfil agora são 4 — rolam de lado no celular */
+.abas { overflow-x: auto; scrollbar-width: none; }
+.abas::-webkit-scrollbar { display: none; }
+.abas .aba { white-space: nowrap; }

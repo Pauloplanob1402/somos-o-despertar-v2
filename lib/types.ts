@@ -69,6 +69,28 @@ export interface PessoaSugerida {
   euSigo?: boolean;
 }
 
+/** Perfil de OUTRA pessoa, visto por mim — página /perfil/[arroba]. */
+export interface PerfilPublico {
+  id: string;
+  nome: string;
+  arroba: string;
+  bio: string;
+  cor: string;
+  avatarUrl: string | null;
+  seguidoresCount: number;
+  seguindoCount: number;
+  publicacoesCount: number;
+  criadoEm: string;
+  souEu: boolean;
+  euSigo: boolean;
+  eleMeSegue: boolean;
+  euBloqueei: boolean;
+  haBloqueio: boolean;
+  amigosEmComum: number;
+  /** conversa 1:1 já existente entre nós, se houver */
+  conversaId: string | null;
+}
+
 export interface Comentario {
   id: string;
   autorId: string;

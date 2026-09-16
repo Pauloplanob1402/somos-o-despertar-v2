@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { tempoRelativo } from "@/lib/mapeadores";
 import { dividirTextoComLinks } from "@/lib/links";
 import type { Post } from "@/lib/types";
-import { Avatar } from "./Avatar";
+import { AvatarPessoa, LinkPessoa } from "./LinkPessoa";
 import { ComentariosDoPost } from "./ComentariosDoPost";
 import { IconCoracao, IconComentar, IconCompartilhar, IconMais, IconSalvos, IconLink } from "./icons";
 
@@ -55,11 +55,11 @@ export function PostCard({ post }: { post: Post }) {
 
   return (
     <article className="post" id={`post-${post.id}`}>
-      <Avatar nome={post.autorNome} cor={post.autorCor} tamanho={46} />
+      <AvatarPessoa arroba={post.autorArroba} nome={post.autorNome} cor={post.autorCor} tamanho={46} />
       <div className="post-corpo">
         <div className="post-cabecalho">
-          <span className="nome">{post.autorNome}</span>
-          <span className="arroba">@{post.autorArroba}</span>
+          <LinkPessoa arroba={post.autorArroba} className="nome">{post.autorNome}</LinkPessoa>
+          <LinkPessoa arroba={post.autorArroba} className="arroba">@{post.autorArroba}</LinkPessoa>
           <span className="tempo">· {tempoRelativo(post.criadoEm)}</span>
           {post.mesaNome ? (
             <span className="tempo">· em {post.mesaEmoji} {post.mesaNome}</span>

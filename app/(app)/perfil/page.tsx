@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { mapearPost } from "@/lib/mapeadores";
 import type { Post } from "@/lib/types";
+import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
 import { CompletarCadastro } from "@/components/CompletarCadastro";
@@ -99,7 +100,12 @@ export default function PerfilPage() {
         {!editando ? (
           <>
             <h2 className="perfil-nome">{perfil.nome}</h2>
-            <div className="perfil-arroba">@{perfil.arroba}</div>
+            <div className="perfil-arroba">
+              @{perfil.arroba}
+              <Link href={`/perfil/${perfil.arroba}`} className="link-pessoa" style={{ marginLeft: 10, fontSize: 13 }}>
+                ver como as pessoas veem
+              </Link>
+            </div>
             <p className="perfil-bio">{perfil.bio || "Ainda sem bio."}</p>
           </>
         ) : (

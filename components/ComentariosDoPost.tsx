@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { mapearComentario, tempoRelativo } from "@/lib/mapeadores";
 import type { Comentario, Post } from "@/lib/types";
-import { Avatar } from "./Avatar";
+import { AvatarPessoa, LinkPessoa } from "./LinkPessoa";
 
 export function ComentariosDoPost({ post }: { post: Post }) {
   const { user } = useAuth();
@@ -108,12 +108,12 @@ export function ComentariosDoPost({ post }: { post: Post }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {comentarios.map((c) => (
             <div key={c.id} style={{ display: "flex", gap: 10 }}>
-              <Avatar nome={c.autorNome} cor={c.autorCor} tamanho={32} />
+              <AvatarPessoa arroba={c.autorArroba} nome={c.autorNome} cor={c.autorCor} tamanho={32} />
               <div>
                 <div style={{ fontSize: 13.5 }}>
-                  <b>{c.autorNome}</b>{" "}
+                  <LinkPessoa arroba={c.autorArroba}><b>{c.autorNome}</b></LinkPessoa>{" "}
                   <span style={{ color: "var(--texto-fraco)" }}>
-                    @{c.autorArroba} · {tempoRelativo(c.criadoEm)}
+                    <LinkPessoa arroba={c.autorArroba}>@{c.autorArroba}</LinkPessoa> · {tempoRelativo(c.criadoEm)}
                   </span>
                 </div>
                 <div style={{ fontSize: 14 }}>{c.texto}</div>

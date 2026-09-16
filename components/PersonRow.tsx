@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import type { PessoaSugerida } from "@/lib/types";
-import { Avatar } from "./Avatar";
+import { AvatarPessoa, LinkPessoa } from "./LinkPessoa";
 
 export function PersonRow({ pessoa, comBio = true }: { pessoa: PessoaSugerida; comBio?: boolean }) {
   const { alternarSeguirPessoa } = useApp();
@@ -20,10 +20,10 @@ export function PersonRow({ pessoa, comBio = true }: { pessoa: PessoaSugerida; c
 
   return (
     <div className="linha-pessoa">
-      <Avatar nome={pessoa.nome} cor={pessoa.cor} tamanho={comBio ? 48 : 42} />
+      <AvatarPessoa arroba={pessoa.arroba} nome={pessoa.nome} cor={pessoa.cor} tamanho={comBio ? 48 : 42} />
       <div className="linha-pessoa-info">
-        <div className="nome">{pessoa.nome}</div>
-        <div className="arroba">@{pessoa.arroba}</div>
+        <LinkPessoa arroba={pessoa.arroba} className="nome">{pessoa.nome}</LinkPessoa>
+        <LinkPessoa arroba={pessoa.arroba} className="arroba">@{pessoa.arroba}</LinkPessoa>
         {comBio && pessoa.bio ? <div className="bio">{pessoa.bio}</div> : null}
         {pessoa.amigosEmComum > 0 ? (
           <div style={{ fontSize: 12.5, color: "var(--primaria)", marginTop: 2 }}>

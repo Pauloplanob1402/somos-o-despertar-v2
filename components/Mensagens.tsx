@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useMensagens } from "@/context/MensagensContext";
 import { usePresence } from "@/context/PresenceContext";
 import { createClient } from "@/lib/supabase/client";
 import type { ConversaResumo } from "@/lib/types";
 import { Avatar } from "./Avatar";
+import { AvatarPessoa, LinkPessoa } from "./LinkPessoa";
 import {
   IconBuscar, IconEmoji, IconFoto, IconAudio, IconVoltar, IconEnviar,
 } from "./icons";
@@ -26,6 +28,17 @@ function nomeConversa(conv: ConversaResumo): string {
 
 export function ConversationsView() {
   const [mostrarConversaMobile, setMostrarConversaMobile] = useState(false);
+  const { selecionarConversa } = useMensagens();
+  const searchParams = useSearchParams();
+  const conversaDaUrl = searchParams.get("c");
+
+  // Chegou em /mensagens?c=<id> (veio do botão "Mensagem" de um perfil):
+  // abre a conversa direto — no celular, já na tela da conversa.
+  useEffect(() => {
+    if (!conversaDaUrl) return;
+    selecionarConversa(conversaDaUrl);
+    setMostrarConversaMobile(true);
+  }, [conversaDaUrl, selecionarConversa]);
 
   return (
     <div className={`mensagens-layout ${mostrarConversaMobile ? "tela-conversa" : "tela-lista"}`}>
@@ -133,7 +146,7 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
                   onAbrirConversa();
                 }}
               >
-                <div className="avatar-wrap">
+                <div className="avatar-wrap" onClick={(e) => e.stopPropagation()}>
                   {conv.tipo === "grupo" ? (
                     <div
                       className="avatar"
@@ -142,7 +155,12 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
                       {conv.emoji}
                     </div>
                   ) : (
-                    <Avatar nome={conv.outroNome ?? "?"} cor={conv.outroCor ?? "#B8663F"} tamanho={48} />
+                    <AvatarPessoa
+                      arroba={conv.outroArroba}
+                      nome={conv.outroNome ?? "?"}
+                      cor={conv.outroCor ?? "#B8663F"}
+                      tamanho={48}
+                    />
                   )}
                   {estaOnline ? <span className="bolinha-online" /> : null}
                 </div>
@@ -215,10 +233,21 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
             {conversa.emoji}
           </div>
         ) : (
-          <Avatar nome={conversa.outroNome ?? "?"} cor={conversa.outroCor ?? "#B8663F"} tamanho={40} />
+          <AvatarPessoa
+            arroba={conversa.outroArroba}
+            nome={conversa.outroNome ?? "?"}
+            cor={conversa.outroCor ?? "#B8663F"}
+            tamanho={40}
+          />
         )}
         <div>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{nomeConversa(conversa)}</div>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>
+            {conversa.tipo === "pessoa" && conversa.outroArroba ? (
+              <LinkPessoa arroba={conversa.outroArroba}>{nomeConversa(conversa)}</LinkPessoa>
+            ) : (
+              nomeConversa(conversa)
+            )}
+          </div>
           {conversa.tipo === "pessoa" && estaOnline ? <div className="status">Online agora</div> : null}
         </div>
       </div>

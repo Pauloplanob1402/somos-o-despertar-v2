@@ -3,6 +3,7 @@ import type {
   EmAlta,
   Mesa,
   OpcaoEnquete,
+  PerfilPublico,
   PessoaSugerida,
   Post,
   ResultadoBusca,
@@ -132,6 +133,46 @@ export function mapearPessoa(l: {
   };
 }
 
+export function mapearPerfilPublico(l: {
+  id: string;
+  nome: string;
+  arroba: string;
+  bio: string;
+  cor: string;
+  avatar_url: string | null;
+  seguidores_count: number;
+  seguindo_count: number;
+  publicacoes_count: number;
+  criado_em: string;
+  sou_eu: boolean;
+  eu_sigo: boolean;
+  ele_me_segue: boolean;
+  eu_bloqueei: boolean;
+  ha_bloqueio: boolean;
+  amigos_em_comum: number;
+  conversa_id: string | null;
+}): PerfilPublico {
+  return {
+    id: l.id,
+    nome: l.nome,
+    arroba: l.arroba,
+    bio: l.bio,
+    cor: l.cor,
+    avatarUrl: l.avatar_url,
+    seguidoresCount: Number(l.seguidores_count ?? 0),
+    seguindoCount: Number(l.seguindo_count ?? 0),
+    publicacoesCount: Number(l.publicacoes_count ?? 0),
+    criadoEm: l.criado_em,
+    souEu: l.sou_eu,
+    euSigo: l.eu_sigo,
+    eleMeSegue: l.ele_me_segue,
+    euBloqueei: l.eu_bloqueei,
+    haBloqueio: l.ha_bloqueio,
+    amigosEmComum: Number(l.amigos_em_comum ?? 0),
+    conversaId: l.conversa_id,
+  };
+}
+
 export function mapearComentario(l: {
   id: string;
   autor_id: string;
@@ -191,4 +232,9 @@ export function tempoRelativo(iso: string): string {
 /** "Maria Silva" -> "MS". Usado pelo Avatar quando não há foto. */
 export function iniciaisDe(nome: string): string {
   return nome.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
+
+/** "entrou em março de 2026" — usado no cabeçalho do perfil. */
+export function mesAnoDe(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 }
