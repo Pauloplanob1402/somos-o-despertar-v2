@@ -20,7 +20,7 @@ const MOTIVOS: { valor: MotivoDenuncia; label: string }[] = [
 ];
 
 export function PostCard({ post }: { post: Post }) {
-  const { curtirPost, votarEnquete, alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, mostrarToast } = useApp();
+  const { curtirPost, votarEnquete, alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, mostrarToast, abrirComposer } = useApp();
   const { perfil } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
   const [motivosAbertos, setMotivosAbertos] = useState(false);
@@ -116,6 +116,13 @@ export function PostCard({ post }: { post: Post }) {
           </div>
         </div>
 
+        {ehTestemunho && post.pedidoOriginalTexto ? (
+          <blockquote className="pedido-citado">
+            <span className="pedido-citado-etiqueta">Pedido original</span>
+            {post.pedidoOriginalTexto}
+          </blockquote>
+        ) : null}
+
         {post.texto ? (
           <p className="post-texto">
             {dividirTextoComLinks(post.texto).map((parte, i) =>
@@ -202,6 +209,26 @@ export function PostCard({ post }: { post: Post }) {
         ) : null}
 
         {ehPedido ? <BotaoOracao post={post} /> : null}
+
+        {ehPedido && souEuOAutor ? (
+          post.testemunhoId ? (
+            <div className="pedido-respondido">
+              <span>🙌 Você marcou este pedido como respondido</span>
+            </div>
+          ) : (
+            <button
+              className="botao-deus-respondeu"
+              onClick={() =>
+                abrirComposer({
+                  tipo: "testemunho",
+                  pedidoOriginal: { id: post.id, texto: post.texto ?? "" },
+                })
+              }
+            >
+              🙌 Deus respondeu — contar como foi
+            </button>
+          )
+        ) : null}
 
         <div className="post-acoes">
           {/* num pedido de oração o coração sai de cena: o retorno certo

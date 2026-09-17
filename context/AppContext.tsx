@@ -25,6 +25,8 @@ import type { EmAlta, Mesa, Post, VersiculoDoDia } from "@/lib/types";
 export interface ContextoComposer {
   tipo?: "texto" | "oracao" | "testemunho";
   versiculo?: VersiculoDoDia | null;
+  /** o pedido de oração que este testemunho está respondendo, se veio do botão "Deus respondeu" */
+  pedidoOriginal?: { id: string; texto: string } | null;
 }
 
 export type MotivoDenuncia = "spam" | "odio" | "assedio" | "impropria" | "outro";
@@ -51,6 +53,7 @@ interface AppContextValue {
     } | null;
     tipo?: "texto" | "oracao" | "testemunho";
     versiculoId?: string | null;
+    pedidoOriginalId?: string | null;
   }) => Promise<{ erro: string | null }>;
 
   /** "estou orando por você" — alterna, como a curtida, mas notifica com nome */
@@ -246,10 +249,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } | null;
       tipo?: "texto" | "oracao" | "testemunho";
       versiculoId?: string | null;
+      pedidoOriginalId?: string | null;
     }) => {
       const { error } = await supabase.rpc("criar_post", {
         p_tipo: dados.tipo ?? "texto",
         p_versiculo_id: dados.versiculoId ?? null,
+        p_pedido_original_id: dados.pedidoOriginalId ?? null,
         p_texto: dados.texto ?? null,
         p_pergunta: dados.pergunta ?? null,
         p_opcoes: dados.opcoes ?? null,
@@ -272,7 +277,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dados.tipo === "oracao"
           ? "Seu pedido foi partilhado"
           : dados.tipo === "testemunho"
-            ? "Seu testemunho foi partilhado"
+            ? dados.pedidoOriginalId
+              ? "Seu testemunho foi partilhado — o pedido está marcado como respondido"
+              : "Seu testemunho foi partilhado"
             : dados.versiculoId
               ? "Sua reflexão foi publicada"
               : "Publicação criada"

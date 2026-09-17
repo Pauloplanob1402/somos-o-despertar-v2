@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./AuthContext";
+import { tocarSom } from "@/lib/sons";
 import type { ConversaResumo, MensagemReal, PerfilResumo } from "@/lib/types";
 
 /** resultado da busca por @arroba pra iniciar uma conversa nova */
@@ -124,6 +125,12 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
           // chega direto na janela, ver o outro efeito abaixo).
           const nova = payload.new as { conversa_id: string; autor_id: string; texto: string };
           if (nova.autor_id === user.id) return;
+
+          // toca pra QUALQUER mensagem recebida — com a conversa aberta
+          // ou não. É o próprio canal acima recebendo todo insert que
+          // garante isso disparar uma vez só por mensagem.
+          tocarSom("mensagem");
+
           if (nova.conversa_id === conversaAtivaRef.current) return;
 
           supabase

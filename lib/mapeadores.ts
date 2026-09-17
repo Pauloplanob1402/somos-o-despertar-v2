@@ -31,6 +31,10 @@ type LinhaPost = {
   imagem_url: string | null;
   versiculo_id?: string | null;
   versiculo_referencia?: string | null;
+  testemunho_id?: string | null;
+  respondido_em?: string | null;
+  pedido_original_id?: string | null;
+  pedido_original_texto?: string | null;
   link_url: string | null;
   link_titulo: string | null;
   link_descricao: string | null;
@@ -67,6 +71,10 @@ export function mapearPost(l: LinhaPost): Post {
     linkDominio: l.link_dominio,
     versiculoId: l.versiculo_id ?? null,
     versiculoReferencia: l.versiculo_referencia ?? null,
+    testemunhoId: l.testemunho_id ?? null,
+    respondidoEm: l.respondido_em ?? null,
+    pedidoOriginalId: l.pedido_original_id ?? null,
+    pedidoOriginalTexto: l.pedido_original_texto ?? null,
     curtidasCount: l.curtidas_count,
     comentariosCount: l.comentarios_count,
     oracoesCount: Number(l.oracoes_count ?? 0),

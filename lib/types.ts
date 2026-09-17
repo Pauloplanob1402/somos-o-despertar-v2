@@ -39,6 +39,11 @@ export interface Post {
   /** reflexão sobre o versículo do dia, quando preenchido */
   versiculoId: string | null;
   versiculoReferencia: string | null;
+  /** fecha o ciclo pedido -> resposta: presente nos dois lados do vínculo */
+  testemunhoId: string | null;
+  respondidoEm: string | null;
+  pedidoOriginalId: string | null;
+  pedidoOriginalTexto: string | null;
   curtidasCount: number;
   comentariosCount: number;
   oracoesCount: number;

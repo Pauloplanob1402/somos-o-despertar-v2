@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./AuthContext";
+import { tocarSom } from "@/lib/sons";
 import type { NotificacaoReal } from "@/lib/types";
 
 interface NotificacoesContextValue {
@@ -78,6 +79,7 @@ export function NotificacoesProvider({ children }: { children: ReactNode }) {
         if (nova) {
           idsConhecidos.current.add(nova.id);
           setRecemChegada(nova);
+          tocarSom("notificacao");
         }
       }
       setNotificacoes(lista);

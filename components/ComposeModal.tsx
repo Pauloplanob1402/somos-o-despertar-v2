@@ -28,6 +28,7 @@ export function ComposeModal() {
   const versiculo = composerContexto.versiculo ?? null;
   const ehPedido = composerContexto.tipo === "oracao";
   const ehTestemunho = composerContexto.tipo === "testemunho";
+  const pedidoOriginal = composerContexto.pedidoOriginal ?? null;
 
   const [texto, setTexto] = useState("");
   const [modoEnquete, setModoEnquete] = useState(false);
@@ -101,6 +102,20 @@ export function ComposeModal() {
     if (composerAberto && (ehPedido || ehTestemunho || versiculo)) setModoEnquete(false);
   }, [composerAberto, ehPedido, ehTestemunho, versiculo]);
 
+  // "Deus respondeu": ao abrir vindo desse botão, o composer já carrega
+  // o pedido original citado, com espaço pronto pra escrever a resposta —
+  // só uma vez por abertura, pra não sobrescrever o que a pessoa digitar.
+  const pedidoJaCarregadoRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!composerAberto || !pedidoOriginal) {
+      if (!composerAberto) pedidoJaCarregadoRef.current = null;
+      return;
+    }
+    if (pedidoJaCarregadoRef.current === pedidoOriginal.id) return;
+    pedidoJaCarregadoRef.current = pedidoOriginal.id;
+    setTexto(`“${pedidoOriginal.texto}”\n\n🙌 Deus respondeu: `);
+  }, [composerAberto, pedidoOriginal]);
+
   function dispensarLink() {
     if (previaLink) setLinkDispensado(previaLink.url);
     setPreviaLink(null);
@@ -111,7 +126,9 @@ export function ComposeModal() {
   const titulo = ehPedido
     ? "Um pedido de oração"
     : ehTestemunho
-      ? "Compartilhar um testemunho"
+      ? pedidoOriginal
+        ? "Deus respondeu 🙌"
+        : "Compartilhar um testemunho"
       : versiculo
         ? "Sua reflexão de hoje"
         : "O que está despertando em você?";
@@ -216,6 +233,7 @@ export function ComposeModal() {
                 ? ("testemunho" as const)
                 : ("texto" as const),
             versiculoId: versiculo?.id ?? null,
+            pedidoOriginalId: pedidoOriginal?.id ?? null,
           }
     );
 
@@ -252,8 +270,9 @@ export function ComposeModal() {
           ) : null}
           {ehTestemunho ? (
             <p className="aviso-pedido">
-              Seu testemunho entra no mural de oração, pra quem também está
-              esperando uma resposta.
+              {pedidoOriginal
+                ? "Seu pedido original vai ser marcado como respondido, e esse testemunho fica ligado a ele."
+                : "Seu testemunho entra no mural de oração, pra quem também está esperando uma resposta."}
             </p>
           ) : null}
 
