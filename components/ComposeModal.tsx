@@ -429,15 +429,20 @@ export function ComposeModal() {
             </button>
           </div>
           <button className="botao-publicar-final" disabled={!podePublicar || enviando} onClick={handlePublicar}>
-            {enviando
-              ? "Publicando…"
-              : ehPedido
-                ? "Partilhar pedido"
-                : ehTestemunho
-                  ? "Partilhar testemunho"
-                  : versiculo
-                    ? "Publicar reflexão"
-                    : "Publicar"}
+            {enviando ? (
+              <>
+                <span className="publicar-spinner" aria-hidden />
+                Publicando…
+              </>
+            ) : ehPedido ? (
+              "Partilhar pedido"
+            ) : ehTestemunho ? (
+              "Partilhar testemunho"
+            ) : versiculo ? (
+              "Publicar reflexão"
+            ) : (
+              "Publicar"
+            )}
           </button>
         </div>
       </div>

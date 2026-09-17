@@ -9,7 +9,7 @@ import type { Post } from "@/lib/types";
 import { AvatarPessoa, LinkPessoa } from "./LinkPessoa";
 import { ComentariosDoPost } from "./ComentariosDoPost";
 import { BotaoOracao } from "./BotaoOracao";
-import { IconCoracao, IconComentar, IconCompartilhar, IconMais, IconSalvos, IconLink } from "./icons";
+import { IconCoracao, IconComentar, IconCompartilhar, IconMais, IconSalvos, IconLink, IconCheck } from "./icons";
 
 const MOTIVOS: { valor: MotivoDenuncia; label: string }[] = [
   { valor: "spam", label: "Spam ou propaganda" },
@@ -25,6 +25,9 @@ export function PostCard({ post }: { post: Post }) {
   const [menuAberto, setMenuAberto] = useState(false);
   const [motivosAbertos, setMotivosAbertos] = useState(false);
   const [curtindoAnim, setCurtindoAnim] = useState(false);
+  const [guardandoAnim, setGuardandoAnim] = useState(false);
+  const [compartilhado, setCompartilhado] = useState(false);
+  const [coracaoFlutuante, setCoracaoFlutuante] = useState(false);
   const [comentariosAbertos, setComentariosAbertos] = useState(false);
 
   const souEuOAutor = perfil?.id === post.autorId;
@@ -36,6 +39,23 @@ export function PostCard({ post }: { post: Post }) {
     curtirPost(post.id);
     setCurtindoAnim(true);
     setTimeout(() => setCurtindoAnim(false), 250);
+  }
+
+  // duplo toque na imagem sempre curte (nunca descurte) e mostra o
+  // coração flutuante clássico — se já tiver curtido, só o feedback
+  // visual aparece de novo, sem tirar a curtida.
+  function handleDuploToqueImagem() {
+    if (!post.euCurti) curtirPost(post.id);
+    setCoracaoFlutuante(true);
+    setTimeout(() => setCoracaoFlutuante(false), 700);
+  }
+
+  function handleGuardar() {
+    alternarSalvarPost(post.id);
+    if (!post.euSalvei) {
+      setGuardandoAnim(true);
+      setTimeout(() => setGuardandoAnim(false), 350);
+    }
   }
 
   function fecharMenu() {
@@ -51,7 +71,11 @@ export function PostCard({ post }: { post: Post }) {
   function handleCompartilhar() {
     const url = `${window.location.origin}/inicio#post-${post.id}`;
     navigator.clipboard?.writeText(url).then(
-      () => mostrarToast("Link copiado"),
+      () => {
+        mostrarToast("Link copiado");
+        setCompartilhado(true);
+        setTimeout(() => setCompartilhado(false), 1600);
+      },
       () => mostrarToast("Não deu pra copiar o link")
     );
   }
@@ -181,9 +205,12 @@ export function PostCard({ post }: { post: Post }) {
         ) : null}
 
         {post.imagemUrl ? (
-          <div className="post-imagem">
+          <div className="post-imagem" onDoubleClick={handleDuploToqueImagem}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={post.imagemUrl} alt="" style={{ width: "100%", display: "block" }} />
+            {coracaoFlutuante ? (
+              <span className="coracao-flutuante"><IconCoracao /></span>
+            ) : null}
           </div>
         ) : null}
 
@@ -250,19 +277,27 @@ export function PostCard({ post }: { post: Post }) {
           <button className="acao-post" onClick={() => setComentariosAbertos((v) => !v)}>
             <IconComentar /><span>{post.comentariosCount}</span>
           </button>
-          <button className="acao-post" onClick={handleCompartilhar}>
-            <IconCompartilhar /><span>Compartilhar</span>
+          <button
+            className={`acao-post ${compartilhado ? "compartilhado" : ""}`}
+            onClick={handleCompartilhar}
+          >
+            <span className="compartilhar-icone">{compartilhado ? <IconCheck /> : <IconCompartilhar />}</span>
+            <span>{compartilhado ? "Copiado!" : "Compartilhar"}</span>
           </button>
           <button
-            className={`acao-post ${post.euSalvei ? "salvo" : ""}`}
-            onClick={() => alternarSalvarPost(post.id)}
+            className={`acao-post ${post.euSalvei ? "salvo" : ""} ${guardandoAnim ? "acabou-guardar" : ""}`}
+            onClick={handleGuardar}
             title={post.euSalvei ? "Remover dos guardados" : "Guardar"}
           >
-            <IconSalvos />
+            <span className="guardar-anim"><IconSalvos /></span>
           </button>
         </div>
 
-        {comentariosAbertos ? <ComentariosDoPost post={post} /> : null}
+        {comentariosAbertos ? (
+          <div className="comentarios-bloco">
+            <ComentariosDoPost post={post} />
+          </div>
+        ) : null}
       </div>
     </article>
   );

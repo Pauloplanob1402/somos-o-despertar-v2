@@ -80,3 +80,6 @@ export const IconOracao = (p: IconProps) => (
 export const IconFechar = (p: IconProps) => (
   <svg {...base({ strokeWidth: 2, ...p })}><path d="M6 6l12 12M18 6 6 18" /></svg>
 );
+export const IconCheck = (p: IconProps) => (
+  <svg {...base({ strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round", ...p })}><path d="M5 13l4 4L19 7" /></svg>
+);

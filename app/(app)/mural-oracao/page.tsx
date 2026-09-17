@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { mapearPost } from "@/lib/mapeadores";
 import type { Post } from "@/lib/types";
 import { PostCard } from "@/components/PostCard";
+import { FeedSkeleton } from "@/components/FeedSkeleton";
 
 type Filtro = "recentes" | "aguardando" | "testemunhos";
 
@@ -107,9 +108,7 @@ export default function MuralDeOracaoPage() {
       </div>
 
       {carregando ? (
-        <div style={{ padding: 40, textAlign: "center", color: "var(--texto-fraco)" }}>
-          Carregando…
-        </div>
+        <FeedSkeleton />
       ) : posts.length === 0 ? (
         <div style={{ padding: "60px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
           {filtro === "aguardando" ? (

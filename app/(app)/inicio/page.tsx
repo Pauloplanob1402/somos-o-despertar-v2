@@ -7,6 +7,7 @@ import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
 import { SugestoesDeMesa } from "@/components/SugestoesDeMesa";
 import { VersiculoDoDia } from "@/components/VersiculoDoDia";
+import { FeedSkeleton } from "@/components/FeedSkeleton";
 import { IconFoto, IconVideo, IconEnquete } from "@/components/icons";
 
 export default function InicioPage() {
@@ -58,9 +59,7 @@ export default function InicioPage() {
       </div>
 
       {carregandoFeed ? (
-        <div style={{ padding: "60px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
-          Carregando o feed…
-        </div>
+        <FeedSkeleton />
       ) : posts.length === 0 ? (
         <div style={{ padding: "60px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
           <p style={{ fontSize: 15 }}>O feed ainda está em silêncio.</p>

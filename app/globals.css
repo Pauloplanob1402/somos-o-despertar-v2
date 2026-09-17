@@ -1633,3 +1633,141 @@ input, textarea { font-family: inherit; }
     flex-direction: column;
   }
 }
+
+/* =====================================================================
+   Etapa 5 — Micro-interações
+   Uma linguagem de movimento própria do Despertar: toque → resposta →
+   confirmação → repouso. Nada aqui é obrigatório — a regra global no
+   topo do arquivo (prefers-reduced-motion) zera toda duração de
+   animação/transição pra quem pediu menos movimento no sistema.
+   ===================================================================== */
+
+/* Curtir e guardar: resposta imediata ao toque, antes mesmo da rede
+   confirmar — o "pulo" de contador já foi resolvido na Etapa 4 pelo
+   update otimista do AppContext; aqui é só o ícone reagindo. */
+.acao-post .curtir-anim,
+.acao-post .guardar-anim,
+.acao-post .compartilhar-icone {
+  display: inline-flex;
+  transition: transform 0.2s cubic-bezier(.34, 1.56, .64, 1);
+}
+.acao-post:active .curtir-anim,
+.acao-post:active .guardar-anim {
+  transform: scale(0.82);
+}
+.acao-post.acabou-curtir .curtir-anim { transform: scale(1.35); }
+.acao-post.acabou-guardar .guardar-anim { animation: guardar-pop 0.35s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes guardar-pop {
+  0% { transform: scale(1) rotate(0); }
+  45% { transform: scale(1.3) rotate(-8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+/* Compartilhar: confirmação no próprio botão, sem depender só do toast */
+.acao-post.compartilhado { color: var(--primaria); }
+.acao-post.compartilhado .compartilhar-icone { transform: scale(1.15); }
+
+/* Duplo toque numa imagem do post = curtir, com o coração flutuante
+   clássico. Só aparece, nunca precisa de segundo toque pra sumir. */
+.post-imagem { position: relative; }
+.coracao-flutuante {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.coracao-flutuante svg {
+  width: 86px;
+  height: 86px;
+  fill: #fff;
+  stroke: #fff;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35));
+  animation: coracao-explode 0.7s cubic-bezier(.2, .9, .3, 1) both;
+}
+@keyframes coracao-explode {
+  0% { transform: scale(0); opacity: 0; }
+  32% { transform: scale(1.15); opacity: 1; }
+  55% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* Comentários: abrir/fechar em transição curta, sem salto de layout */
+.comentarios-bloco { animation: comentarios-entrar 0.2s ease both; }
+@keyframes comentarios-entrar {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.comentario-enviar {
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.comentario-enviar.visivel { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+/* Pedir oração: toque responde na hora, e o estado "enviando" evita
+   duplo clique enquanto a notificação ainda está sendo registrada */
+.botao-oracao:active { transform: scale(0.96); }
+.botao-oracao.enviando { opacity: 0.75; cursor: default; }
+.botao-oracao .oracao-spinner {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: girar 0.6s linear infinite;
+  display: inline-block;
+}
+
+/* Publicar: "Publicando…" + disabled já travam o duplo clique (Etapa 4);
+   o spinner só reforça visualmente que a publicação está em andamento */
+.botao-publicar-final { display: inline-flex; align-items: center; gap: 8px; }
+.botao-publicar-final .publicar-spinner {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5); border-top-color: #fff;
+  animation: girar 0.6s linear infinite;
+}
+
+/* Fechar modal/menus: mesma resposta tátil dos outros botões do app */
+.fechar-modal:active { transform: scale(0.9); }
+
+/* Resposta tátil (~150ms) nos elementos que ainda não tinham estado
+   "pressed" próprio — o resto do app (botões pill, ícones de ação)
+   já herda isso do bloco de sistema de botões, lá no topo do arquivo. */
+.acao-post,
+.enquete-opcao,
+.oracao-contagem,
+.menu-contexto button,
+.link-previa-remover {
+  transition: opacity 0.12s ease, transform 0.12s ease, background var(--transicao-rapida);
+}
+.acao-post:active { opacity: 0.65; }
+.enquete-opcao:active:not(:disabled) { transform: scale(0.98); }
+.oracao-contagem:active,
+.link-previa-remover:active { transform: scale(0.92); }
+.menu-contexto button:active { background: var(--borda); }
+
+/* Skeletons — troca a tela "parada" por uma estrutura que já parece o
+   post, preservando a altura pra quando o conteúdo real chegar */
+.feed-skeleton { display: flex; flex-direction: column; }
+.post-skeleton {
+  display: flex;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--borda);
+}
+.skeleton-bloco {
+  background: linear-gradient(90deg, var(--borda) 25%, var(--bg) 50%, var(--borda) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulso 1.4s ease-in-out infinite;
+  border-radius: var(--raio-sm);
+}
+.skeleton-avatar { width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; }
+.skeleton-linhas { flex: 1; display: flex; flex-direction: column; gap: 9px; padding-top: 4px; }
+.skeleton-linha { height: 12px; }
+.skeleton-linha.curta { width: 34%; }
+.skeleton-linha.media { width: 68%; }
+.skeleton-linha.longa { width: 94%; margin-top: 6px; }
+@keyframes skeleton-pulso {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

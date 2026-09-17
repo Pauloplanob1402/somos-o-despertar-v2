@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { mapearPost } from "@/lib/mapeadores";
 import type { Post } from "@/lib/types";
 import { PostCard } from "@/components/PostCard";
+import { FeedSkeleton } from "@/components/FeedSkeleton";
 
 export default function GuardadosPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -34,7 +35,7 @@ export default function GuardadosPage() {
       </div>
 
       {carregando ? (
-        <div style={{ padding: 40, textAlign: "center", color: "var(--texto-fraco)" }}>Carregando…</div>
+        <FeedSkeleton />
       ) : posts.length === 0 ? (
         <div style={{ padding: "70px 22px", textAlign: "center", color: "var(--texto-fraco)" }}>
           <p style={{ fontSize: 15 }}>Você ainda não guardou nenhuma reflexão.</p>

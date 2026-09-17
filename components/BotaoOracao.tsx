@@ -18,6 +18,14 @@ export function BotaoOracao({ post }: { post: Post }) {
   const { orarPorPost } = useApp();
   const [pessoas, setPessoas] = useState<QuemOrou[] | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
+  async function handleOrar() {
+    if (enviando) return;
+    setEnviando(true);
+    await orarPorPost(post.id);
+    setEnviando(false);
+  }
 
   async function verQuemOrou() {
     if (pessoas) {
@@ -34,11 +42,16 @@ export function BotaoOracao({ post }: { post: Post }) {
   return (
     <div className="bloco-oracao">
       <button
-        className={`botao-oracao ${post.euOrei ? "orando" : ""}`}
-        onClick={() => orarPorPost(post.id)}
+        className={`botao-oracao ${post.euOrei ? "orando" : ""} ${enviando ? "enviando" : ""}`}
+        onClick={handleOrar}
+        disabled={enviando}
       >
-        <span aria-hidden>🙏</span>
-        {post.euOrei ? "Você está orando" : "Estou orando por você"}
+        {enviando ? (
+          <span className="oracao-spinner" aria-hidden />
+        ) : (
+          <span aria-hidden>🙏</span>
+        )}
+        {enviando ? "Enviando…" : post.euOrei ? "Você está orando" : "Estou orando por você"}
       </button>
 
       {post.oracoesCount > 0 ? (

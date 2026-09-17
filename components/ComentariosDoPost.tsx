@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +20,18 @@ export function ComentariosDoPost({ post }: { post: Post }) {
 
   const [resumo, setResumo] = useState<string | null>(null);
   const [resumindo, setResumindo] = useState(false);
+  const campoRef = useRef<HTMLInputElement>(null);
+
+  // ao abrir o bloco de comentários, foco automático no campo — e um
+  // scrollIntoView suave, pra que o teclado do celular (que empurra a
+  // tela pra cima) não deixe o campo escondido atrás dele.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      campoRef.current?.focus();
+      campoRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, 220);
+    return () => clearTimeout(id);
+  }, []);
 
   const carregar = useCallback(async () => {
     const { data } = await supabase.rpc("listar_comentarios", {
@@ -133,14 +145,20 @@ export function ComentariosDoPost({ post }: { post: Post }) {
         onSubmit={(e) => { e.preventDefault(); enviar(); }}
       >
         <input
+          ref={campoRef}
           type="text"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
+          onFocus={(e) => e.currentTarget.scrollIntoView({ block: "nearest", behavior: "smooth" })}
           placeholder="Escreva um comentário…"
           className="campo-texto"
           style={{ flex: 1, minWidth: 0 }}
         />
-        <button type="submit" className="botao-mini" disabled={enviando || !texto.trim()}>
+        <button
+          type="submit"
+          className={`botao-mini comentario-enviar ${texto.trim() ? "visivel" : ""}`}
+          disabled={enviando || !texto.trim()}
+        >
           {enviando ? "…" : "Enviar"}
         </button>
       </form>
