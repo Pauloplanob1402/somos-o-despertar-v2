@@ -35,25 +35,33 @@ export function NavMobile() {
   // livre pra receber toque, igual em qualquer app de mensagens.
   if (pathname === "/mensagens" && telaConversaAberta) return null;
 
-  const item = (href: string, Icone: typeof IconInicio, badge?: boolean) => (
-    <Link href={href} className={`nav-mobile-item ${pathname?.startsWith(href) ? "ativo" : ""}`}>
-      <Icone />
-      {badge ? <span className="nav-mobile-badge" /> : null}
-    </Link>
-  );
+  const item = (href: string, label: string, Icone: typeof IconInicio, badge?: boolean) => {
+    const ativo = pathname?.startsWith(href);
+    return (
+      <Link
+        href={href}
+        className={`nav-mobile-item ${ativo ? "ativo" : ""}`}
+        aria-label={badge ? `${label}, novidades não lidas` : label}
+        aria-current={ativo ? "page" : undefined}
+      >
+        <Icone />
+        {badge ? <span className="nav-mobile-badge" aria-hidden="true" /> : null}
+      </Link>
+    );
+  };
 
   return (
-    <nav className="nav-mobile">
-      {item("/inicio", IconInicio)}
-      {item("/explorar", IconExplorar)}
+    <nav className="nav-mobile" aria-label="Navegação principal">
+      {item("/inicio", "Início", IconInicio)}
+      {item("/explorar", "Descobrir", IconExplorar)}
       <button className="nav-mobile-item central" aria-label="Publicar" onClick={() => abrirComposer()}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
           <circle cx="12" cy="12" r="10" />
           <path d="M12 8v8M8 12h8" />
         </svg>
       </button>
-      {item("/mensagens", IconMensagens, temNaoLidas)}
-      {item("/perfil", IconPerfil)}
+      {item("/mensagens", "Mensagens", IconMensagens, temNaoLidas)}
+      {item("/perfil", "Perfil", IconPerfil)}
     </nav>
   );
 }

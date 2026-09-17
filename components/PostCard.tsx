@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp, type MotivoDenuncia } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { tempoRelativo } from "@/lib/mapeadores";
@@ -63,6 +63,15 @@ export function PostCard({ post }: { post: Post }) {
     setMotivosAbertos(false);
   }
 
+  useEffect(() => {
+    if (!menuAberto) return;
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === "Escape") fecharMenu();
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [menuAberto]);
+
   function handleDenunciar(motivo: MotivoDenuncia) {
     denunciarPost(post.id, motivo);
     fecharMenu();
@@ -93,13 +102,19 @@ export function PostCard({ post }: { post: Post }) {
           ) : null}
 
           <div style={{ position: "relative", marginLeft: "auto" }}>
-            <button className="post-mais" onClick={() => setMenuAberto((v) => !v)}>
+            <button
+              className="post-mais"
+              onClick={() => setMenuAberto((v) => !v)}
+              aria-label="Mais opções desta publicação"
+              aria-haspopup="menu"
+              aria-expanded={menuAberto}
+            >
               <IconMais />
             </button>
             {menuAberto ? (
               <>
                 <div style={{ position: "fixed", inset: 0, zIndex: 110 }} onClick={fecharMenu} />
-                <div className="menu-contexto" style={{ top: "100%", right: 0, left: "auto", minWidth: 210 }}>
+                <div className="menu-contexto" role="menu" style={{ top: "100%", right: 0, left: "auto", minWidth: 210 }}>
                   {!motivosAbertos ? (
                     <>
                       <button onClick={() => { alternarSalvarPost(post.id); fecharMenu(); }}>
@@ -269,17 +284,25 @@ export function PostCard({ post }: { post: Post }) {
             <button
               className={`acao-post ${post.euCurti ? "curtido" : ""} ${curtindoAnim ? "acabou-curtir" : ""}`}
               onClick={handleCurtir}
+              aria-label={post.euCurti ? "Descurtir publicação" : "Curtir publicação"}
+              aria-pressed={post.euCurti}
             >
               <span className="curtir-anim"><IconCoracao /></span>
               <span>{post.curtidasCount}</span>
             </button>
           ) : null}
-          <button className="acao-post" onClick={() => setComentariosAbertos((v) => !v)}>
+          <button
+            className="acao-post"
+            onClick={() => setComentariosAbertos((v) => !v)}
+            aria-label={comentariosAbertos ? "Fechar comentários" : "Ver comentários"}
+            aria-expanded={comentariosAbertos}
+          >
             <IconComentar /><span>{post.comentariosCount}</span>
           </button>
           <button
             className={`acao-post ${compartilhado ? "compartilhado" : ""}`}
             onClick={handleCompartilhar}
+            aria-label={compartilhado ? "Link copiado" : "Compartilhar publicação"}
           >
             <span className="compartilhar-icone">{compartilhado ? <IconCheck /> : <IconCompartilhar />}</span>
             <span>{compartilhado ? "Copiado!" : "Compartilhar"}</span>
@@ -288,6 +311,8 @@ export function PostCard({ post }: { post: Post }) {
             className={`acao-post ${post.euSalvei ? "salvo" : ""} ${guardandoAnim ? "acabou-guardar" : ""}`}
             onClick={handleGuardar}
             title={post.euSalvei ? "Remover dos guardados" : "Guardar"}
+            aria-label={post.euSalvei ? "Remover dos guardados" : "Guardar publicação"}
+            aria-pressed={post.euSalvei}
           >
             <span className="guardar-anim"><IconSalvos /></span>
           </button>

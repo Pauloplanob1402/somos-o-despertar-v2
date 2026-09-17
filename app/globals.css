@@ -15,12 +15,28 @@
   --bg: #FAF8F5;
   --bg-elevado: #FFFFFF;
   --bg-escuro: #1C1A18;
+  /* Um nível acima de --bg-elevado: usado só em superfícies flutuantes
+     (modal, menu de contexto) que precisam se distinguir de um card
+     comum. Em modo claro é idêntico a --bg-elevado — a diferença só
+     aparece no dark mode, onde cria profundidade real sem sombra
+     pesada (ver 6.4). */
+  --superficie-elevada: #FFFFFF;
+  --superficie-interativa: #FAF8F5;
 
   --texto: #1C1A18;
   --texto-suave: #5C5348;
   --texto-fraco: #948C7F;
   --borda: #E9E2D8;
   --borda-forte: #D8CDBE;
+
+  /* Estados semânticos — antes espalhados como hex soltos (#E0245E,
+     #C0284C) em vários componentes. Centralizados aqui pra qualquer
+     tela de erro/sucesso futura usar a mesma cor, e pro dark mode
+     conseguir reequilibrar todas de uma vez. */
+  --sucesso: #3E8E5B;
+  --aviso: #B8863F;
+  --erro: #C0284C;
+  --curtir: #E0245E;
 
   --raio-sm: 8px;
   --raio-md: 14px;
@@ -50,6 +66,53 @@
 
   --transicao-rapida: 0.15s ease;
   --transicao-toque: transform 0.1s ease;
+}
+
+/* ==========================================================================
+   Dark Mode — segue a preferência do sistema (prefers-color-scheme).
+   Não é "fundo preto + texto branco": é uma escada de 4 superfícies
+   (bg → bg-elevado → superficie-elevada → superficie-interativa), cada
+   uma um degrau mais clara que a anterior, criando profundidade sem
+   depender de sombra pesada. Como o resto do CSS já usa só tokens (ver
+   auditoria da 6.5), redefinir os valores aqui é suficiente — nenhum
+   componente precisa saber que o tema mudou.
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #17140F;
+    --bg-elevado: #211C16;
+    --superficie-elevada: #2B241C;
+    --superficie-interativa: #362D22;
+
+    --texto: #F1E9DD;
+    --texto-suave: #C7BBA8;
+    --texto-fraco: #8C8172;
+    --borda: #362E24;
+    --borda-forte: #4A3F31;
+
+    --primaria: #D98756;
+    --primaria-escura: #C56F3E;
+    --primaria-fundo: #3A2A1E;
+    --dourado: #E4BC7F;
+    --dourado-fundo: #362D1D;
+    --acento: #9483A0;
+    --acento-fundo: #2C2632;
+
+    --sucesso: #5FAE7C;
+    --aviso: #D2A25F;
+    --erro: #E0566F;
+    --curtir: #F0507A;
+
+    --sombra-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --sombra-flutuante: 0 16px 40px rgba(0, 0, 0, 0.55);
+    --sombra-hover: 0 4px 14px rgba(0, 0, 0, 0.3);
+  }
+
+  /* .bg-escuro é uma superfície sempre-escura por identidade visual
+     (onboarding/entrar) — não faz parte da escada de tema, então não
+     é redefinida aqui. */
 }
 
 * { box-sizing: border-box; }
@@ -202,7 +265,7 @@ input, textarea { font-family: inherit; }
   font-weight: 700;
 }
 .botao-primario:hover { background: var(--primaria-escura); }
-.botao-primario:disabled { background: #4a5a54; }
+.botao-primario:disabled { background: var(--texto-fraco); }
 
 .interesses-grade {
   display: grid;
@@ -493,8 +556,15 @@ input, textarea { font-family: inherit; }
   width: 30px; height: 30px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
+  position: relative;
 }
 .post-mais:hover { background: var(--bg); color: var(--texto); }
+/* área de toque confortável (44px+) sem aumentar o círculo visual */
+.post-mais::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+}
 .post-texto { font-size: 15.5px; margin-top: 3px; white-space: pre-wrap; }
 .post-imagem {
   margin-top: 12px;
@@ -631,12 +701,13 @@ input, textarea { font-family: inherit; }
   color: var(--texto-suave);
   font-size: 13.5px;
   font-weight: 600;
-  padding: 6px 4px;
+  padding: 13px 4px;
+  margin: -7px 0;
 }
 .acao-post svg { width: 18px; height: 18px; }
 .acao-post:hover { color: var(--primaria); }
-.acao-post.curtido { color: #E0245E; }
-.acao-post.curtido svg { fill: #E0245E; }
+.acao-post.curtido { color: var(--curtir); }
+.acao-post.curtido svg { fill: var(--curtir); }
 .acao-post.salvo { color: var(--primaria); }
 .acao-post.salvo svg { fill: var(--primaria); }
 .acao-post .curtir-anim { transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); }
@@ -765,7 +836,7 @@ input, textarea { font-family: inherit; }
   font-weight: 700;
 }
 .botao-seguir.seguindo { background: transparent; color: var(--texto); border: 1px solid var(--borda-forte); }
-.botao-seguir:hover.seguindo { border-color: #E0245E; color: #E0245E; }
+.botao-seguir:hover.seguindo { border-color: var(--erro); color: var(--erro); }
 .botao-contorno {
   background: transparent;
   border: 1px solid var(--borda-forte);
@@ -988,6 +1059,12 @@ input, textarea { font-family: inherit; }
   width: 38px; height: 38px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  position: relative;
+}
+.botao-icone-mini::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
 }
 .botao-icone-mini:hover { background: var(--bg); color: var(--primaria); }
 .botao-icone-mini:active { transform: scale(0.9); }
@@ -1046,7 +1123,7 @@ input, textarea { font-family: inherit; }
 }
 @keyframes fundo-entrar { from { opacity: 0; } to { opacity: 1; } }
 .modal-caixa {
-  background: var(--bg-elevado);
+  background: var(--superficie-elevada);
   border-radius: var(--raio-lg);
   width: 100%;
   max-width: 560px;
@@ -1071,6 +1148,12 @@ input, textarea { font-family: inherit; }
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: var(--texto-suave);
+  position: relative;
+}
+.fechar-modal::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 .fechar-modal:hover { background: var(--borda); color: var(--texto); }
 .modal-corpo { padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -1139,7 +1222,7 @@ input, textarea { font-family: inherit; }
 /* Menu de contexto (•••) ---------------------------------------------------*/
 .menu-contexto {
   position: absolute;
-  background: var(--bg-elevado);
+  background: var(--superficie-elevada);
   border: 1px solid var(--borda);
   border-radius: var(--raio-md);
   box-shadow: var(--sombra-flutuante);
@@ -1157,8 +1240,8 @@ input, textarea { font-family: inherit; }
   font-size: 14px;
   color: var(--texto);
 }
-.menu-contexto button:hover { background: var(--bg); }
-.menu-contexto button.perigo { color: #C0284C; }
+.menu-contexto button:hover { background: var(--superficie-interativa); }
+.menu-contexto button.perigo { color: var(--erro); }
 
 /* Mobile shell --------------------------------------------------------------*/
 .topo-mobile { display: none; }
@@ -1202,7 +1285,7 @@ input, textarea { font-family: inherit; }
     top: 0;
     z-index: 30;
     background: var(--bg);
-    padding: 14px;
+    padding: calc(14px + env(safe-area-inset-top)) 14px 14px;
     border-bottom: 1px solid var(--borda);
     font-family: var(--fonte-display);
     font-weight: 700;
@@ -1228,8 +1311,10 @@ input, textarea { font-family: inherit; }
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3px;
-    padding: 6px 0;
+    padding: 10px 0;
+    min-height: 44px;
     color: var(--texto-fraco);
     position: relative;
   }
@@ -1271,7 +1356,11 @@ input, textarea { font-family: inherit; }
   }
 }
 
-.voltar-mobile { display: none; border: none; background: none; color: var(--texto); width: 30px; }
+.voltar-mobile {
+  display: none; border: none; background: none; color: var(--texto);
+  width: 44px; min-height: 44px;
+  align-items: center; justify-content: center;
+}
 .voltar-mobile svg { width: 21px; height: 21px; }
 
 @media (min-width: 768px) {

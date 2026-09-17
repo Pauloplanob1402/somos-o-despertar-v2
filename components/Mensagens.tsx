@@ -217,7 +217,7 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
     // deixamos essa tela "vazia" sem jeito de voltar pra lista.
     return (
       <div className="janela-conversa">
-        <button className="voltar-mobile" onClick={onVoltar} style={{ display: "inline-flex", padding: 14 }}>
+        <button className="voltar-mobile" onClick={onVoltar} aria-label="Voltar para a lista de conversas" style={{ display: "inline-flex", padding: 14 }}>
           <IconVoltar />
         </button>
         <div className="mensagens-vazio">Selecione uma conversa</div>
@@ -232,7 +232,7 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
     // uma tela travada sem explicação nem saída.
     return (
       <div className="janela-conversa">
-        <button className="voltar-mobile" onClick={onVoltar} style={{ display: "inline-flex", padding: 14 }}>
+        <button className="voltar-mobile" onClick={onVoltar} aria-label="Voltar para a lista de conversas" style={{ display: "inline-flex", padding: 14 }}>
           <IconVoltar />
         </button>
         <div className="mensagens-vazio">
@@ -258,7 +258,7 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
   return (
     <div className="janela-conversa">
       <div className="conversa-cabecalho">
-        <button className="voltar-mobile" onClick={onVoltar}><IconVoltar /></button>
+        <button className="voltar-mobile" onClick={onVoltar} aria-label="Voltar para a lista de conversas"><IconVoltar /></button>
         {conversa.tipo === "grupo" ? (
           <div className="avatar" style={{ width: 40, height: 40, background: "var(--primaria-fundo)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
             {conversa.emoji}
@@ -309,18 +309,19 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
         className="composer-mensagem"
         onSubmit={(e) => { e.preventDefault(); handleEnviar(); }}
       >
-        <button type="button" className="botao-icone-mini"><IconEmoji /></button>
-        <button type="button" className="botao-icone-mini"><IconFoto /></button>
+        <button type="button" className="botao-icone-mini" aria-label="Inserir emoji"><IconEmoji /></button>
+        <button type="button" className="botao-icone-mini" aria-label="Anexar foto"><IconFoto /></button>
         <input
           type="text"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Escreva uma mensagem..."
         />
-        <button type="button" className="botao-icone-mini"><IconAudio /></button>
+        <button type="button" className="botao-icone-mini" aria-label="Gravar áudio"><IconAudio /></button>
         <button
           type="submit"
           className="botao-enviar"
+          aria-label="Enviar mensagem"
           disabled={enviando || !texto.trim()}
           onClick={(e) => { e.preventDefault(); handleEnviar(); }}
         >

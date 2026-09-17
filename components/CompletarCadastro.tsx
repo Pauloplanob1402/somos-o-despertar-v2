@@ -63,7 +63,7 @@ export function CompletarCadastro() {
         <p style={{ fontSize: 13, color: "var(--primaria)", marginTop: 10 }}>{mensagem}</p>
       ) : null}
       {erro ? (
-        <p style={{ fontSize: 13, color: "#C0284C", marginTop: 10 }}>{erro}</p>
+        <p style={{ fontSize: 13, color: "var(--erro)", marginTop: 10 }}>{erro}</p>
       ) : null}
     </div>
   );

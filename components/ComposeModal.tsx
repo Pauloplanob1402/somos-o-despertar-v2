@@ -50,6 +50,29 @@ export function ComposeModal() {
   const [linkDispensado, setLinkDispensado] = useState<string | null>(null);
   const urlEmBuscaRef = useRef<string | null>(null);
 
+  // Acessibilidade do modal: guarda quem tinha o foco antes de abrir (pra
+  // devolver ao fechar) e fecha com ESC no desktop — sem isso o teclado
+  // fica "preso" sem saída óbvia, e o foco se perde quando o modal some.
+  const focoAnteriorRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (composerAberto) {
+      focoAnteriorRef.current = document.activeElement as HTMLElement | null;
+    } else {
+      focoAnteriorRef.current?.focus?.();
+      focoAnteriorRef.current = null;
+    }
+  }, [composerAberto]);
+
+  useEffect(() => {
+    if (!composerAberto) return;
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === "Escape") handleFechar();
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [composerAberto]);
+
   useEffect(() => {
     if (modoEnquete) return;
     const url = encontrarPrimeiraUrl(texto);
@@ -247,10 +270,16 @@ export function ComposeModal() {
 
   return (
     <div className="modal-fundo" onClick={handleFechar}>
-      <div className="modal-caixa" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-caixa"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-composer"
+      >
         <div className="modal-topo">
-          <button className="fechar-modal" onClick={handleFechar}><IconFechar /></button>
-          <h3>{titulo}</h3>
+          <button className="fechar-modal" onClick={handleFechar} aria-label="Fechar"><IconFechar /></button>
+          <h3 id="titulo-composer">{titulo}</h3>
           <span style={{ width: 32 }} />
         </div>
 
@@ -328,6 +357,7 @@ export function ComposeModal() {
                   <img src={previaImagem} alt="Prévia da imagem" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} />
                   <button
                     onClick={removerImagem}
+                    aria-label="Remover imagem"
                     style={{
                       position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: "50%",
                       background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", display: "flex",
@@ -340,7 +370,7 @@ export function ComposeModal() {
               ) : null}
 
               {erroImagem ? (
-                <p style={{ color: "#C0284C", fontSize: 12.5, marginTop: 8 }}>{erroImagem}</p>
+                <p style={{ color: "var(--erro)", fontSize: 12.5, marginTop: 8 }}>{erroImagem}</p>
               ) : null}
 
               {!modoEnquete && carregandoLink ? (
@@ -371,6 +401,7 @@ export function ComposeModal() {
                     className="link-previa-remover"
                     onClick={dispensarLink}
                     title="Remover prévia"
+                    aria-label="Remover prévia do link"
                     type="button"
                   >
                     <IconFechar />
@@ -409,18 +440,21 @@ export function ComposeModal() {
             <button
               className="icone-acao"
               title="Foto"
+              aria-label="Adicionar foto"
               onClick={handleEscolherImagem}
               disabled={modoEnquete}
               style={arquivoImagem ? { background: "var(--primaria-fundo)" } : undefined}
             >
               <IconFoto />
             </button>
-            <button className="icone-acao" title="Vídeo em breve" disabled>
+            <button className="icone-acao" title="Vídeo em breve" aria-label="Vídeo em breve" disabled>
               <IconVideo />
             </button>
             <button
               className="icone-acao"
               title="Enquete"
+              aria-label={modoEnquete ? "Remover enquete" : "Criar enquete"}
+              aria-pressed={modoEnquete}
               style={modoEnquete ? { background: "var(--primaria-fundo)" } : undefined}
               onClick={() => setModoEnquete((v) => !v)}
               disabled={ehPedido || ehTestemunho || !!versiculo}
