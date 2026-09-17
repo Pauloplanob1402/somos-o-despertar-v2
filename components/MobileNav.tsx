@@ -7,6 +7,13 @@ import { useMensagens } from "@/context/MensagensContext";
 import { IconInicio, IconExplorar, IconMensagens, IconPerfil } from "./icons";
 
 export function TopoMobile() {
+  const pathname = usePathname();
+  const { telaConversaAberta } = useMensagens();
+  // dentro de uma conversa aberta, a conversa já tem seu próprio
+  // cabeçalho (avatar + nome + voltar) — a barra genérica só tomaria
+  // espaço de tela à toa, então some, como em qualquer app de chat.
+  if (pathname === "/mensagens" && telaConversaAberta) return null;
+
   return (
     <div className="topo-mobile">
       DESPERT<span className="on">AR</span>
@@ -17,8 +24,16 @@ export function TopoMobile() {
 export function NavMobile() {
   const pathname = usePathname();
   const { abrirComposer } = useApp();
-  const { conversas } = useMensagens();
+  const { conversas, telaConversaAberta } = useMensagens();
   const temNaoLidas = conversas.some((c) => c.naoLidas > 0);
+
+  // essa é a correção do bug real: a barra fixa de baixo tem z-index
+  // maior que o composer do chat, então SEMPRE cobria o campo de
+  // digitar e o botão de enviar quando uma conversa estava aberta no
+  // celular — o toque nunca chegava no botão, só o teclado (Enter)
+  // continuava funcionando. Escondendo a barra aqui, o composer fica
+  // livre pra receber toque, igual em qualquer app de mensagens.
+  if (pathname === "/mensagens" && telaConversaAberta) return null;
 
   const item = (href: string, Icone: typeof IconInicio, badge?: boolean) => (
     <Link href={href} className={`nav-mobile-item ${pathname?.startsWith(href) ? "ativo" : ""}`}>

@@ -35,6 +35,13 @@ interface MensagensContextValue {
   mensagensAtivas: MensagemReal[];
   carregandoMensagens: boolean;
 
+  /** no celular, se a tela da conversa (chat aberto) está em foco — usado
+   *  tanto pelo layout de /mensagens quanto pela barra de navegação fixa,
+   *  que precisa sumir enquanto o chat está aberto (ver MobileNav). */
+  telaConversaAberta: boolean;
+  abrirTelaConversa: () => void;
+  fecharTelaConversa: () => void;
+
   selecionarConversa: (id: string) => void;
   enviarMensagem: (texto: string) => Promise<void>;
 
@@ -89,6 +96,9 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
   const [mensagensAtivas, setMensagensAtivas] = useState<MensagemReal[]>([]);
   const [carregandoMensagens, setCarregandoMensagens] = useState(false);
   const [mensagemRecebida, setMensagemRecebida] = useState<MensagemRecebidaPopup | null>(null);
+  const [telaConversaAberta, setTelaConversaAberta] = useState(false);
+  const abrirTelaConversa = useCallback(() => setTelaConversaAberta(true), []);
+  const fecharTelaConversa = useCallback(() => setTelaConversaAberta(false), []);
 
   // a conversa aberta muda com frequência; o canal abaixo é montado uma
   // vez só, então lê sempre o valor mais recente por aqui, não pela
@@ -303,6 +313,9 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       conversaAtivaId,
       mensagensAtivas,
       carregandoMensagens,
+      telaConversaAberta,
+      abrirTelaConversa,
+      fecharTelaConversa,
       selecionarConversa,
       enviarMensagem,
       buscarPessoas,
@@ -313,6 +326,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
     [
       conversas, carregandoConversas,
       conversaAtivaId, mensagensAtivas, carregandoMensagens,
+      telaConversaAberta, abrirTelaConversa, fecharTelaConversa,
       selecionarConversa, enviarMensagem, buscarPessoas, iniciarConversaCom,
       mensagemRecebida, limparMensagemRecebida,
     ]

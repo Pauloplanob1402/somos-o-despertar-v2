@@ -21,6 +21,10 @@ type NomeSom = keyof typeof CAMINHOS;
 
 const cache = new Map<NomeSom, HTMLAudioElement>();
 
+// true assim que o primeiro gesto do usuário já "destravou" o áudio
+// (ver destravarAudio, chamada pelo <AudioUnlocker> no layout raiz).
+let destravado = false;
+
 function obterAudio(nome: NomeSom): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
   let audio = cache.get(nome);
@@ -33,17 +37,51 @@ function obterAudio(nome: NomeSom): HTMLAudioElement | null {
 }
 
 /**
- * Toca um som de notificação. Falha em silêncio: navegadores bloqueiam
- * áudio antes da primeira interação do usuário com a página, e isso é
- * normal — não é um erro que valha mostrar pra ninguém.
+ * Toca um som de notificação. Se o navegador ainda não liberou áudio
+ * (antes da primeira interação do usuário com a página), a promise de
+ * play() rejeita — isso é esperado e não é logado como erro. Qualquer
+ * outra falha (arquivo ausente, formato não suportado etc.) é logada,
+ * pra não ficarmos no escuro sobre o motivo real de um som não tocar.
  */
 export function tocarSom(nome: NomeSom) {
   const audio = obterAudio(nome);
   if (!audio) return;
   try {
     audio.currentTime = 0;
-    void audio.play().catch(() => {});
-  } catch {
-    // idem — ambiente sem suporte a áudio, ou autoplay bloqueado
+    audio.play().catch((erro: DOMException) => {
+      if (erro.name === "NotAllowedError") {
+        // autoplay bloqueado — normal antes do primeiro toque na página
+        return;
+      }
+      console.warn(`[sons] falha ao tocar "${nome}":`, erro.name, erro.message);
+    });
+  } catch (erro) {
+    console.warn(`[sons] erro inesperado ao tocar "${nome}":`, erro);
   }
+}
+
+/**
+ * Libera o áudio pra tocar depois, chamada no primeiro toque/clique do
+ * usuário na página (ver <AudioUnlocker />). Toca e pausa cada som na
+ * hora — truque padrão pra "desbloquear" o elemento <audio> dentro da
+ * política de autoplay dos navegadores, sem o usuário ouvir nada.
+ */
+export function destravarAudio() {
+  if (destravado || typeof window === "undefined") return;
+  destravado = true;
+  (Object.keys(CAMINHOS) as NomeSom[]).forEach((nome) => {
+    const audio = obterAudio(nome);
+    if (!audio) return;
+    audio
+      .play()
+      .then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      })
+      .catch(() => {
+        // se nem isso funcionou, volta a permitir uma nova tentativa
+        // no próximo gesto do usuário.
+        destravado = false;
+      });
+  });
 }

@@ -6,6 +6,7 @@ import { PresenceProvider } from "@/context/PresenceContext";
 import { MensagensProvider } from "@/context/MensagensContext";
 import { NotificacoesProvider } from "@/context/NotificacoesContext";
 import { Toast } from "@/components/Toast";
+import { AudioUnlocker } from "@/components/AudioUnlocker";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <NotificacoesProvider>
                   {children}
                   <Toast />
+                  <AudioUnlocker />
                 </NotificacoesProvider>
               </MensagensProvider>
             </PresenceProvider>

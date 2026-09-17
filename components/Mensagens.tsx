@@ -27,8 +27,7 @@ function nomeConversa(conv: ConversaResumo): string {
 }
 
 export function ConversationsView() {
-  const [mostrarConversaMobile, setMostrarConversaMobile] = useState(false);
-  const { selecionarConversa } = useMensagens();
+  const { selecionarConversa, telaConversaAberta, abrirTelaConversa, fecharTelaConversa } = useMensagens();
   const searchParams = useSearchParams();
   const conversaDaUrl = searchParams.get("c");
 
@@ -37,13 +36,13 @@ export function ConversationsView() {
   useEffect(() => {
     if (!conversaDaUrl) return;
     selecionarConversa(conversaDaUrl);
-    setMostrarConversaMobile(true);
-  }, [conversaDaUrl, selecionarConversa]);
+    abrirTelaConversa();
+  }, [conversaDaUrl, selecionarConversa, abrirTelaConversa]);
 
   return (
-    <div className={`mensagens-layout ${mostrarConversaMobile ? "tela-conversa" : "tela-lista"}`}>
-      <ConversationList onAbrirConversa={() => setMostrarConversaMobile(true)} />
-      <ConversationWindow onVoltar={() => setMostrarConversaMobile(false)} />
+    <div className={`mensagens-layout ${telaConversaAberta ? "tela-conversa" : "tela-lista"}`}>
+      <ConversationList onAbrirConversa={abrirTelaConversa} />
+      <ConversationWindow onVoltar={fecharTelaConversa} />
     </div>
   );
 }
@@ -287,7 +286,13 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
           placeholder="Escreva uma mensagem..."
         />
         <button type="button" className="botao-icone-mini"><IconAudio /></button>
-        <button type="submit" className="botao-enviar"><IconEnviar /></button>
+        <button
+          type="submit"
+          className="botao-enviar"
+          onClick={(e) => { e.preventDefault(); handleEnviar(); }}
+        >
+          <IconEnviar />
+        </button>
       </form>
     </div>
   );
