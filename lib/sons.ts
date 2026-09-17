@@ -31,6 +31,11 @@ function obterAudio(nome: NomeSom): HTMLAudioElement | null {
   if (!audio) {
     audio = new Audio(CAMINHOS[nome]);
     audio.volume = nome === "mensagem" ? 0.55 : 0.4;
+    // carrega o arquivo assim que possível, em vez de esperar a
+    // primeira chamada de play() — evita um pequeno atraso (ou até
+    // silêncio) na notificação que chega logo depois do desbloqueio.
+    audio.preload = "auto";
+    audio.load();
     cache.set(nome, audio);
   }
   return audio;

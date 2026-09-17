@@ -37,7 +37,7 @@ export default function InicioPage() {
             <button className="icone-acao" title="Vídeo"><IconVideo /></button>
             <button className="icone-acao" title="Enquete"><IconEnquete /></button>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="composer-rodape-extra" style={{ display: "flex", gap: 8 }}>
             <Link
               href="/mural-oracao"
               className="botao-mini"

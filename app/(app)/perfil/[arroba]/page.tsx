@@ -289,7 +289,7 @@ export default function PerfilPublicoPage() {
             {estaOnline ? <span className="bolinha-online" /> : null}
           </div>
 
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div className="perfil-acoes" style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {perfil.souEu ? (
               <Link href="/perfil" className="botao-contorno">
                 Editar perfil

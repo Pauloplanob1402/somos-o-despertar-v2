@@ -39,8 +39,11 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+html { overflow-x: hidden; width: 100%; }
 body {
   margin: 0;
+  width: 100%;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--texto);
   font-family: var(--fonte-texto);
@@ -1037,6 +1040,26 @@ input, textarea { font-family: inherit; }
   .principal { border-right: none; }
   .layout { display: block; max-width: none; }
 
+  /* O composer da tela inicial tinha 5 ações + rótulos de texto numa
+     linha só ("Mural de oração" / "Pedir oração" / "Publicar") — em
+     telas de celular isso é mais largo que a tela e empurrava o botão
+     "Publicar" pra fora da área visível (cortado, "escondido"). Aqui
+     ele quebra em duas linhas, com as ações secundárias completas e o
+     botão de publicar sempre visível por inteiro. */
+  .composer { padding: 14px 14px; }
+  .composer-topo .avatar { width: 38px !important; height: 38px !important; }
+  .composer-rodape {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    padding-left: 0;
+  }
+  .composer-rodape-extra {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
   .topo-mobile {
     display: flex;
     align-items: center;
@@ -1095,6 +1118,23 @@ input, textarea { font-family: inherit; }
   .conversa-cabecalho .voltar-mobile { display: inline-flex; }
   .grade-comunidades { grid-template-columns: 1fr; }
   .interesses-grade { grid-template-columns: 1fr; }
+
+  /* Cabeçalho de perfil: no desktop o avatar e os botões (Seguir /
+     Mensagem / •••) cabem numa linha só. Em telas de celular mais
+     estreitas (comuns em Android, ~360px) essa linha não cabia e
+     empurrava o botão "Mensagem" ou "•••" pra fora da tela — por
+     isso aqui os botões descem pra uma linha própria, sempre visíveis
+     por inteiro, e podem quebrar se precisar. */
+  .perfil-avatar-wrap {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .perfil-avatar-wrap .perfil-acoes {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 .voltar-mobile { display: none; border: none; background: none; color: var(--texto); width: 30px; }
