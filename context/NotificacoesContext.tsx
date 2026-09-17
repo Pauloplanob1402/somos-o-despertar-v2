@@ -105,6 +105,23 @@ export function NotificacoesProvider({ children }: { children: ReactNode }) {
     };
   }, [user, supabase, recarregar]);
 
+  // mesmo ajuste do feed e das conversas: recarrega sozinho ao voltar
+  // pro app ou recuperar a conexão, sem depender de a pessoa atualizar
+  // a página na mão.
+  useEffect(() => {
+    if (!user) return;
+    function retomar() {
+      if (document.visibilityState !== "visible") return;
+      recarregar();
+    }
+    window.addEventListener("online", retomar);
+    document.addEventListener("visibilitychange", retomar);
+    return () => {
+      window.removeEventListener("online", retomar);
+      document.removeEventListener("visibilitychange", retomar);
+    };
+  }, [user, recarregar]);
+
   const marcarTodasComoLidas = useCallback(async () => {
     await supabase.rpc("marcar_todas_notificacoes_lidas");
     setNotificacoes((atual) => atual.map((n) => ({ ...n, lida: true })));

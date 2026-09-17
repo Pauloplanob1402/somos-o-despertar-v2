@@ -177,6 +177,24 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
     };
   }, [user, supabase, recarregarConversas]);
 
+  // mesmo motivo do feed: sem isso, uma mensagem perdida enquanto o
+  // celular estava em segundo plano só aparecia depois de atualizar a
+  // página na mão. Assim, ao voltar pro app ou recuperar a conexão, a
+  // lista de conversas se atualiza sozinha (o realtime cobre o resto).
+  useEffect(() => {
+    if (!user) return;
+    function retomar() {
+      if (document.visibilityState !== "visible") return;
+      recarregarConversas();
+    }
+    window.addEventListener("online", retomar);
+    document.addEventListener("visibilitychange", retomar);
+    return () => {
+      window.removeEventListener("online", retomar);
+      document.removeEventListener("visibilitychange", retomar);
+    };
+  }, [user, recarregarConversas]);
+
   const carregarMensagens = useCallback(
     async (id: string) => {
       setCarregandoMensagens(true);

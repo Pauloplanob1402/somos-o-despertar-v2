@@ -1015,8 +1015,7 @@ input, textarea { font-family: inherit; }
     position: sticky;
     top: 0;
     z-index: 30;
-    background: rgba(247,249,248,0.92);
-    backdrop-filter: blur(8px);
+    background: var(--bg);
     padding: 14px;
     border-bottom: 1px solid var(--borda);
     font-family: var(--fonte-display);
@@ -1031,8 +1030,7 @@ input, textarea { font-family: inherit; }
     display: flex;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    background: rgba(255,255,255,0.96);
-    backdrop-filter: blur(10px);
+    background: var(--bg-elevado);
     border-top: 1px solid var(--borda);
     padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
     z-index: 40;

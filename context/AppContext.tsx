@@ -124,6 +124,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
     if (error || !data) {
       setCarregandoFeed(false);
+      console.warn("[feed] falha ao carregar:", error?.message);
       return;
     }
 
@@ -176,6 +177,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     recarregarMesas();
     recarregarEmAlta();
     recarregarVersiculo();
+  }, [user, recarregarFeed, recarregarMesas, recarregarEmAlta, recarregarVersiculo]);
+
+  // no celular é comum a página ficar "parada" depois de um tempo em
+  // segundo plano ou de uma trocada de wifi->dados — sem isso, a única
+  // saída era atualizar a página na mão. Assim que a aba volta a ficar
+  // visível ou a conexão volta, recarrega tudo sozinho.
+  useEffect(() => {
+    if (!user) return;
+    function retomar() {
+      if (document.visibilityState !== "visible") return;
+      recarregarFeed();
+      recarregarMesas();
+      recarregarEmAlta();
+      recarregarVersiculo();
+    }
+    window.addEventListener("online", retomar);
+    document.addEventListener("visibilitychange", retomar);
+    return () => {
+      window.removeEventListener("online", retomar);
+      document.removeEventListener("visibilitychange", retomar);
+    };
   }, [user, recarregarFeed, recarregarMesas, recarregarEmAlta, recarregarVersiculo]);
 
   /**
