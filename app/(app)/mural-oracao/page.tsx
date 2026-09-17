@@ -7,7 +7,7 @@ import { mapearPost } from "@/lib/mapeadores";
 import type { Post } from "@/lib/types";
 import { PostCard } from "@/components/PostCard";
 
-type Filtro = "recentes" | "aguardando";
+type Filtro = "recentes" | "aguardando" | "testemunhos";
 
 /**
  * Todos os pedidos de oração da comunidade, num só lugar — não só os
@@ -20,15 +20,19 @@ export default function MuralDeOracaoPage() {
   const [filtro, setFiltro] = useState<Filtro>("recentes");
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalSemana, setTotalSemana] = useState<number | null>(null);
+  const [testemunhosSemana, setTestemunhosSemana] = useState<number | null>(null);
   const [carregando, setCarregando] = useState(true);
 
   const carregar = useCallback(async (f: Filtro) => {
     setCarregando(true);
     const supabase = createClient();
-    const { data } = await supabase.rpc("listar_mural_oracao", {
-      p_somente_sem_resposta: f === "aguardando",
-      p_limite: 40,
-    });
+    const { data } =
+      f === "testemunhos"
+        ? await supabase.rpc("listar_mural_testemunhos", { p_limite: 40 })
+        : await supabase.rpc("listar_mural_oracao", {
+            p_somente_sem_resposta: f === "aguardando",
+            p_limite: 40,
+          });
     if (data) setPosts((data as Parameters<typeof mapearPost>[0][]).map(mapearPost));
     setCarregando(false);
   }, []);
@@ -42,30 +46,42 @@ export default function MuralDeOracaoPage() {
     supabase.rpc("contar_pedidos_oracao_semana").then(({ data }) => {
       if (typeof data === "number") setTotalSemana(data);
     });
+    supabase.rpc("contar_testemunhos_semana").then(({ data }) => {
+      if (typeof data === "number") setTestemunhosSemana(data);
+    });
   }, []);
+
+  const contagemAtiva = filtro === "testemunhos" ? testemunhosSemana : totalSemana;
+  const rotuloContagem = filtro === "testemunhos" ? "testemunho" : "pedido";
 
   return (
     <section className="view">
       <div className="topo-secao">
         <h2>Mural de oração</h2>
         <div className="sub">
-          {totalSemana !== null
-            ? `${totalSemana} ${totalSemana === 1 ? "pedido" : "pedidos"} essa semana`
+          {contagemAtiva !== null
+            ? `${contagemAtiva} ${contagemAtiva === 1 ? rotuloContagem : rotuloContagem + "s"} essa semana`
             : "Um lugar pra orar pelos outros"}
         </div>
       </div>
 
       <div className="mural-oracao-topo">
         <p className="mural-oracao-intro">
-          Cada pedido aqui é de alguém esperando que outra pessoa se importe.
-          Ore, e toque em <b>&quot;Estou orando por você&quot;</b>.
+          {filtro === "testemunhos" ? (
+            <>Cada testemunho é uma oração que foi respondida. Leia, e deixe seu <b>❤️</b> por quem escreveu.</>
+          ) : (
+            <>Cada pedido aqui é de alguém esperando que outra pessoa se importe.
+            Ore, e toque em <b>&quot;Estou orando por você&quot;</b>.</>
+          )}
         </p>
         <button
           className="botao-contorno"
           style={{ flexShrink: 0 }}
-          onClick={() => abrirComposer({ tipo: "oracao" })}
+          onClick={() =>
+            abrirComposer({ tipo: filtro === "testemunhos" ? "testemunho" : "oracao" })
+          }
         >
-          🙏 Fazer um pedido
+          {filtro === "testemunhos" ? "🙌 Compartilhar testemunho" : "🙏 Fazer um pedido"}
         </button>
       </div>
 
@@ -82,6 +98,12 @@ export default function MuralDeOracaoPage() {
         >
           Aguardando oração
         </button>
+        <button
+          className={`aba ${filtro === "testemunhos" ? "ativa" : ""}`}
+          onClick={() => setFiltro("testemunhos")}
+        >
+          Testemunhos
+        </button>
       </div>
 
       {carregando ? (
@@ -94,6 +116,11 @@ export default function MuralDeOracaoPage() {
             <>
               <p style={{ fontSize: 15 }}>Todos os pedidos já têm alguém orando.</p>
               <p style={{ fontSize: 13.5, marginTop: 6 }}>Volte mais tarde ou veja os recentes.</p>
+            </>
+          ) : filtro === "testemunhos" ? (
+            <>
+              <p style={{ fontSize: 15 }}>Nenhum testemunho por aqui ainda.</p>
+              <p style={{ fontSize: 13.5, marginTop: 6 }}>Se uma oração já foi respondida na sua vida, conte pra alguém.</p>
             </>
           ) : (
             <>

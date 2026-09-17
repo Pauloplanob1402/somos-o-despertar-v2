@@ -27,7 +27,7 @@ export interface Post {
   mesaId: string | null;
   mesaNome: string | null;
   mesaEmoji: string | null;
-  tipo: "texto" | "enquete" | "oracao";
+  tipo: "texto" | "enquete" | "oracao" | "testemunho";
   texto: string | null;
   pergunta: string | null;
   imagemUrl: string | null;

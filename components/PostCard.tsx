@@ -30,6 +30,7 @@ export function PostCard({ post }: { post: Post }) {
   const souEuOAutor = perfil?.id === post.autorId;
   const jaVotou = post.minhaOpcaoId !== null;
   const ehPedido = post.tipo === "oracao";
+  const ehTestemunho = post.tipo === "testemunho";
 
   function handleCurtir() {
     curtirPost(post.id);
@@ -67,6 +68,7 @@ export function PostCard({ post }: { post: Post }) {
             <span className="tempo">· em {post.mesaEmoji} {post.mesaNome}</span>
           ) : null}
           {ehPedido ? <span className="etiqueta-pedido">Pedido de oração</span> : null}
+          {ehTestemunho ? <span className="etiqueta-testemunho">🙌 Testemunho</span> : null}
           {post.versiculoReferencia ? (
             <span className="etiqueta-reflexao">refletindo sobre {post.versiculoReferencia}</span>
           ) : null}

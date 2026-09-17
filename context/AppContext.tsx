@@ -23,7 +23,7 @@ import type { EmAlta, Mesa, Post, VersiculoDoDia } from "@/lib/types";
 
 /** Com o que o composer abre: post comum, pedido de oração ou reflexão. */
 export interface ContextoComposer {
-  tipo?: "texto" | "oracao";
+  tipo?: "texto" | "oracao" | "testemunho";
   versiculo?: VersiculoDoDia | null;
 }
 
@@ -49,7 +49,7 @@ interface AppContextValue {
       imagem: string | null;
       dominio: string;
     } | null;
-    tipo?: "texto" | "oracao";
+    tipo?: "texto" | "oracao" | "testemunho";
     versiculoId?: string | null;
   }) => Promise<{ erro: string | null }>;
 
@@ -244,7 +244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         imagem: string | null;
         dominio: string;
       } | null;
-      tipo?: "texto" | "oracao";
+      tipo?: "texto" | "oracao" | "testemunho";
       versiculoId?: string | null;
     }) => {
       const { error } = await supabase.rpc("criar_post", {
@@ -271,9 +271,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mostrarToast(
         dados.tipo === "oracao"
           ? "Seu pedido foi partilhado"
-          : dados.versiculoId
-            ? "Sua reflexão foi publicada"
-            : "Publicação criada"
+          : dados.tipo === "testemunho"
+            ? "Seu testemunho foi partilhado"
+            : dados.versiculoId
+              ? "Sua reflexão foi publicada"
+              : "Publicação criada"
       );
       await recarregarFeed();
       // se era reflexão, o card do versículo muda de estado na hora

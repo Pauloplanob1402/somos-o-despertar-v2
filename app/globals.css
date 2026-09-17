@@ -1137,8 +1137,8 @@ input, textarea { font-family: inherit; }
    página de devocional dentro do feed.
    ===================================================================== */
 .versiculo-dia {
-  margin: 0 22px 18px;
-  padding: 20px 22px;
+  margin: 0 22px 14px;
+  padding: 12px 20px;
   border: 1px solid var(--borda);
   border-left: 3px solid var(--primaria);
   border-radius: var(--raio-md);
@@ -1150,7 +1150,7 @@ input, textarea { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 .versiculo-dia-etiqueta {
   font-size: 11.5px;
@@ -1162,7 +1162,7 @@ input, textarea { font-family: inherit; }
 .versiculo-dia-tema {
   font-size: 11.5px;
   color: var(--texto-fraco);
-  padding: 2px 9px;
+  padding: 1px 8px;
   border-radius: var(--raio-pill);
   background: var(--bg-elevado);
 }
@@ -1170,25 +1170,25 @@ input, textarea { font-family: inherit; }
 .versiculo-dia-texto {
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 21px;
-  line-height: 1.45;
+  font-size: 17px;
+  line-height: 1.25;
   color: var(--texto);
 }
 .versiculo-dia-ref {
   display: block;
-  margin-top: 6px;
-  font-size: 13px;
+  margin-top: 3px;
+  font-size: 12.5px;
   font-style: normal;
   color: var(--texto-fraco);
 }
 .versiculo-dia-convite {
-  margin-top: 14px;
-  font-size: 14.5px;
+  margin-top: 7px;
+  font-size: 13.5px;
   color: var(--texto-suave);
 }
 
 .versiculo-dia-rodape {
-  margin-top: 16px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1248,6 +1248,7 @@ input, textarea { font-family: inherit; }
 }
 .etiqueta-pedido { background: var(--primaria); color: #fff; }
 .etiqueta-reflexao { background: var(--primaria-fundo); color: var(--texto-suave); }
+.etiqueta-testemunho { background: var(--dourado); color: var(--texto); }
 
 .bloco-oracao {
   margin-top: 14px;

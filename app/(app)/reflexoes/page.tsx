@@ -43,7 +43,7 @@ export default function ReflexoesPage() {
             <div className="versiculo-dia-rodape">
               <button
                 className="botao-primario"
-                style={{ padding: "9px 20px", fontSize: 13.5 }}
+                style={{ padding: "7px 16px", fontSize: 12.5 }}
                 onClick={() => abrirComposer({ versiculo })}
               >
                 Escrever a minha

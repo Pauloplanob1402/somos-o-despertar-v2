@@ -27,6 +27,7 @@ export function ComposeModal() {
   // reflexão sobre o versículo do dia. Quem decide é quem abriu.
   const versiculo = composerContexto.versiculo ?? null;
   const ehPedido = composerContexto.tipo === "oracao";
+  const ehTestemunho = composerContexto.tipo === "testemunho";
 
   const [texto, setTexto] = useState("");
   const [modoEnquete, setModoEnquete] = useState(false);
@@ -97,8 +98,8 @@ export function ComposeModal() {
   // pedido de oração e reflexão nunca são enquete — se o modo tinha
   // ficado ligado de um uso anterior, desliga ao abrir.
   useEffect(() => {
-    if (composerAberto && (ehPedido || versiculo)) setModoEnquete(false);
-  }, [composerAberto, ehPedido, versiculo]);
+    if (composerAberto && (ehPedido || ehTestemunho || versiculo)) setModoEnquete(false);
+  }, [composerAberto, ehPedido, ehTestemunho, versiculo]);
 
   function dispensarLink() {
     if (previaLink) setLinkDispensado(previaLink.url);
@@ -109,15 +110,19 @@ export function ComposeModal() {
 
   const titulo = ehPedido
     ? "Um pedido de oração"
-    : versiculo
-      ? "Sua reflexão de hoje"
-      : "O que está despertando em você?";
+    : ehTestemunho
+      ? "Compartilhar um testemunho"
+      : versiculo
+        ? "Sua reflexão de hoje"
+        : "O que está despertando em você?";
 
   const placeholder = ehPedido
     ? "Conte o que você está vivendo. Alguém vai orar por isso."
-    : versiculo
-      ? versiculo.convite
-      : "Compartilhe o que Deus está falando com você...";
+    : ehTestemunho
+      ? "Conte o que Deus fez. Isso pode ser a esperança que alguém precisa hoje."
+      : versiculo
+        ? versiculo.convite
+        : "Compartilhe o que Deus está falando com você...";
 
   const opcoesValidas = opcoes.filter((o) => o.trim().length > 0);
   const podePublicar = modoEnquete
@@ -205,7 +210,11 @@ export function ComposeModal() {
             mesaId: mesaId || null,
             imagemUrl,
             link: previaLink,
-            tipo: ehPedido ? ("oracao" as const) : ("texto" as const),
+            tipo: ehPedido
+              ? ("oracao" as const)
+              : ehTestemunho
+                ? ("testemunho" as const)
+                : ("texto" as const),
             versiculoId: versiculo?.id ?? null,
           }
     );
@@ -239,6 +248,12 @@ export function ComposeModal() {
             <p className="aviso-pedido">
               Este pedido fica visível para quem vê seu perfil. Escreva só o
               que você quiser partilhar.
+            </p>
+          ) : null}
+          {ehTestemunho ? (
+            <p className="aviso-pedido">
+              Seu testemunho entra no mural de oração, pra quem também está
+              esperando uma resposta.
             </p>
           ) : null}
 
@@ -394,13 +409,21 @@ export function ComposeModal() {
               title="Enquete"
               style={modoEnquete ? { background: "var(--primaria-fundo)" } : undefined}
               onClick={() => setModoEnquete((v) => !v)}
-              disabled={ehPedido || !!versiculo}
+              disabled={ehPedido || ehTestemunho || !!versiculo}
             >
               <IconEnquete />
             </button>
           </div>
           <button className="botao-publicar-final" disabled={!podePublicar || enviando} onClick={handlePublicar}>
-            {enviando ? "Publicando…" : ehPedido ? "Partilhar pedido" : versiculo ? "Publicar reflexão" : "Publicar"}
+            {enviando
+              ? "Publicando…"
+              : ehPedido
+                ? "Partilhar pedido"
+                : ehTestemunho
+                  ? "Partilhar testemunho"
+                  : versiculo
+                    ? "Publicar reflexão"
+                    : "Publicar"}
           </button>
         </div>
       </div>
