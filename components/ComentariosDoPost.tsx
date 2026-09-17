@@ -137,14 +137,8 @@ export function ComentariosDoPost({ post }: { post: Post }) {
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Escreva um comentário…"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            border: "1px solid var(--borda-forte)",
-            borderRadius: "var(--raio-pill)",
-            padding: "9px 14px",
-            fontSize: 13.5,
-          }}
+          className="campo-texto"
+          style={{ flex: 1, minWidth: 0 }}
         />
         <button type="submit" className="botao-mini" disabled={enviando || !texto.trim()}>
           {enviando ? "…" : "Enviar"}

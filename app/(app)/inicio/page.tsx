@@ -21,6 +21,12 @@ export default function InicioPage() {
 
       <VersiculoDoDia />
 
+      <div className="atalho-oracao">
+        <Link href="/mural-oracao" className="botao-mini">
+          🙏 Mural de oração
+        </Link>
+      </div>
+
       <div className="composer" onClick={() => abrirComposer()} style={{ cursor: "pointer" }}>
         <div className="composer-topo">
           <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} tamanho={44} />
@@ -38,20 +44,13 @@ export default function InicioPage() {
             <button className="icone-acao" title="Enquete"><IconEnquete /></button>
           </div>
           <div className="composer-rodape-extra" style={{ display: "flex", gap: 8 }}>
-            <Link
-              href="/mural-oracao"
-              className="botao-mini"
-              onClick={(e) => e.stopPropagation()}
-            >
-              🙏 Mural de oração
-            </Link>
             <button
               className="botao-mini"
               onClick={(e) => { e.stopPropagation(); abrirComposer({ tipo: "oracao" }); }}
             >
               Pedir oração
             </button>
-            <button className="botao-publicar-final" style={{ padding: "9px 22px" }}>
+            <button className="botao-publicar-final">
               Publicar
             </button>
           </div>

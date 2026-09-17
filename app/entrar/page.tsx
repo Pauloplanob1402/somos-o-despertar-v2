@@ -53,14 +53,7 @@ export default function EntrarPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
-              style={{
-                border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(255,255,255,0.04)",
-                borderRadius: "var(--raio-md)",
-                padding: "13px 16px",
-                fontSize: 14.5,
-                color: "#fff",
-              }}
+              className="campo-texto campo-texto--escuro"
             />
             <button
               className="botao-contorno"

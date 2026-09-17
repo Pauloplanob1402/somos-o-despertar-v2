@@ -294,7 +294,7 @@ export function ComposeModal() {
                     value={pergunta}
                     onChange={(e) => setPergunta(e.target.value)}
                     placeholder="Sua pergunta…"
-                    style={{ border: "1px solid var(--borda-forte)", borderRadius: "var(--raio-sm)", padding: "10px 12px", fontSize: 15 }}
+                    className="campo-texto campo-texto--quadrado"
                   />
                   {opcoes.map((op, i) => (
                     <input
@@ -306,7 +306,8 @@ export function ComposeModal() {
                         setOpcoes(novas);
                       }}
                       placeholder={`Opção ${i + 1}`}
-                      style={{ border: "1px solid var(--borda)", borderRadius: "var(--raio-sm)", padding: "9px 12px", fontSize: 14 }}
+                      className="campo-texto campo-texto--quadrado"
+                      style={{ fontSize: 14, padding: "9px 12px" }}
                     />
                   ))}
                   {opcoes.length < 4 ? (
@@ -381,14 +382,8 @@ export function ComposeModal() {
                 <select
                   value={mesaId}
                   onChange={(e) => setMesaId(e.target.value)}
-                  style={{
-                    marginTop: 12,
-                    border: "1px solid var(--borda)",
-                    borderRadius: "var(--raio-pill)",
-                    padding: "7px 12px",
-                    fontSize: 13.5,
-                    fontFamily: "inherit",
-                  }}
+                  className="campo-texto"
+                  style={{ marginTop: 12, width: "auto", padding: "7px 14px", fontSize: 13.5 }}
                 >
                   <option value="">Publicar no meu perfil</option>
                   {minhasMesas.map((m) => (

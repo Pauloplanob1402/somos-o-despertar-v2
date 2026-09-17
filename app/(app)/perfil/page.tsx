@@ -114,20 +114,20 @@ export default function PerfilPage() {
               value={nomeForm}
               onChange={(e) => setNomeForm(e.target.value)}
               placeholder="Seu nome"
-              style={{ border: "1px solid var(--borda-forte)", borderRadius: "var(--raio-sm)", padding: "9px 12px", fontSize: 15 }}
+              className="campo-texto campo-texto--quadrado"
             />
             <textarea
               value={bioForm}
               onChange={(e) => setBioForm(e.target.value)}
               placeholder="Uma frase sobre sua jornada"
               rows={2}
-              style={{ border: "1px solid var(--borda-forte)", borderRadius: "var(--raio-sm)", padding: "9px 12px", fontSize: 14, fontFamily: "inherit", resize: "vertical" }}
+              className="campo-textarea"
             />
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="botao-primario" style={{ padding: "8px 18px", fontSize: 13.5 }} disabled={salvando} onClick={salvarEdicao}>
+              <button className="botao-publicar-final" disabled={salvando} onClick={salvarEdicao}>
                 {salvando ? "Salvando…" : "Salvar"}
               </button>
-              <button className="botao-contorno" style={{ padding: "8px 18px", fontSize: 13.5 }} onClick={() => setEditando(false)}>
+              <button className="botao-contorno" onClick={() => setEditando(false)}>
                 Cancelar
               </button>
             </div>

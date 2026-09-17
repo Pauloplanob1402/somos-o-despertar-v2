@@ -29,12 +29,27 @@
 
   --sombra-card: 0 1px 2px rgba(28, 26, 24, 0.05);
   --sombra-flutuante: 0 12px 32px rgba(28, 26, 24, 0.16);
+  --sombra-hover: 0 4px 14px rgba(28, 26, 24, 0.08);
 
   --fonte-display: var(--font-display), 'Georgia', serif;
   --fonte-texto: var(--font-texto), 'Segoe UI', sans-serif;
 
   --sidebar-w: 264px;
   --rail-w: 320px;
+
+  /* Escala de botões — 3 portes. Todo botão pill do app usa um destes
+     três pares de padding/fonte, pra não nascer mais um tamanho novo
+     a cada tela (Refactoring UI: espaçamento e tipografia em escala,
+     não em valores soltos). */
+  --botao-lg-pad: 15px 28px;
+  --botao-lg-fonte: 15.5px;
+  --botao-md-pad: 10px 20px;
+  --botao-md-fonte: 14.5px;
+  --botao-sm-pad: 8px 16px;
+  --botao-sm-fonte: 13px;
+
+  --transicao-rapida: 0.15s ease;
+  --transicao-toque: transform 0.1s ease;
 }
 
 * { box-sizing: border-box; }
@@ -69,6 +84,64 @@ input, textarea { font-family: inherit; }
 }
 
 .oculto { display: none !important; }
+
+/* ==========================================================================
+   Sistema de botões — base compartilhada
+   Todo botão do app (primário, contorno, chip, ícone) parte daqui, pra
+   garantir o mesmo comportamento de toque/foco em qualquer tela, mesmo
+   quando o visual muda. Isso é o que fazia botões antigos reagirem de
+   jeitos diferentes ao toque — alguns tinham "active", outros não.
+   ========================================================================== */
+.botao-primario,
+.botao-publicar-lateral,
+.botao-seguir,
+.botao-publicar-final,
+.botao-contorno,
+.botao-mini,
+.chip-categoria,
+.botao-oracao,
+.botao-deus-respondeu,
+.botao-enviar,
+.botao-icone-mini,
+.icone-acao {
+  transition: background var(--transicao-rapida), border-color var(--transicao-rapida),
+    color var(--transicao-rapida), box-shadow var(--transicao-rapida), transform 0.1s ease;
+}
+.botao-primario:active,
+.botao-publicar-lateral:active,
+.botao-seguir:active,
+.botao-publicar-final:active,
+.botao-contorno:active,
+.botao-mini:active,
+.chip-categoria:active,
+.botao-oracao:active,
+.botao-deus-respondeu:active {
+  transform: scale(0.97);
+}
+.botao-primario:disabled,
+.botao-publicar-lateral:disabled,
+.botao-seguir:disabled,
+.botao-publicar-final:disabled,
+.botao-contorno:disabled,
+.botao-mini:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.botao-primario:focus-visible,
+.botao-publicar-lateral:focus-visible,
+.botao-seguir:focus-visible,
+.botao-publicar-final:focus-visible,
+.botao-contorno:focus-visible,
+.botao-mini:focus-visible,
+.chip-categoria:focus-visible,
+.botao-oracao:focus-visible,
+.botao-deus-respondeu:focus-visible,
+.botao-enviar:focus-visible,
+.botao-icone-mini:focus-visible,
+.icone-acao:focus-visible {
+  outline: 2px solid var(--primaria);
+  outline-offset: 2px;
+}
 
 /* ==========================================================================
    Onboarding
@@ -124,14 +197,12 @@ input, textarea { font-family: inherit; }
   color: #fff;
   border: none;
   border-radius: var(--raio-pill);
-  padding: 15px 30px;
-  font-size: 15px;
-  font-weight: 600;
-  transition: background 0.15s ease, transform 0.1s ease;
+  padding: var(--botao-lg-pad);
+  font-size: var(--botao-lg-fonte);
+  font-weight: 700;
 }
 .botao-primario:hover { background: var(--primaria-escura); }
-.botao-primario:active { transform: scale(0.98); }
-.botao-primario:disabled { background: #4a5a54; cursor: not-allowed; }
+.botao-primario:disabled { background: #4a5a54; }
 
 .interesses-grade {
   display: grid;
@@ -226,6 +297,7 @@ input, textarea { font-family: inherit; }
 .nav-item:hover { background: var(--primaria-fundo); color: var(--texto); }
 .nav-item.ativo { color: var(--texto); font-weight: 700; }
 .nav-item .icone { width: 22px; height: 22px; flex-shrink: 0; }
+.nav-divisor { height: 1px; background: var(--borda); margin: 10px 14px; }
 .nav-badge {
   position: absolute;
   left: 26px;
@@ -249,10 +321,9 @@ input, textarea { font-family: inherit; }
   color: #fff;
   border: none;
   border-radius: var(--raio-pill);
-  padding: 14px 0;
-  font-size: 15.5px;
+  padding: var(--botao-lg-pad);
+  font-size: var(--botao-lg-fonte);
   font-weight: 700;
-  transition: background 0.15s ease;
 }
 .botao-publicar-lateral:hover { background: var(--primaria-escura); }
 
@@ -296,46 +367,104 @@ input, textarea { font-family: inherit; }
 }
 .topo-secao h2 { font-size: 20px; }
 .topo-secao .sub { color: var(--texto-suave); font-size: 14px; margin-top: 3px; }
+.atalho-oracao { padding: 0 22px; margin-top: 4px; }
 
 .view { padding: 0 0 90px; }
 
 /* Composer ------------------------------------------------------------------*/
 .composer {
-  padding: 18px 22px;
-  border-bottom: 8px solid var(--bg);
+  margin: 14px 16px 8px;
+  padding: 14px 16px 12px;
+  background: var(--bg-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-card);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
-.composer-topo { display: flex; gap: 12px; }
+.composer:hover { border-color: var(--borda-forte); box-shadow: 0 4px 14px rgba(28,26,24,0.08); }
+.composer:active { transform: scale(0.997); }
+.composer-topo { display: flex; align-items: center; gap: 12px; min-height: 44px; }
 .composer-campo {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 17px;
+  font-size: 16.5px;
+  line-height: 22px;
   resize: none;
-  min-height: 26px;
+  min-height: 44px;
   color: var(--texto);
   font-family: inherit;
-  padding-top: 8px;
+  padding: 11px 0;
 }
 .composer-campo::placeholder { color: var(--texto-fraco); }
 .composer-rodape {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 10px;
-  padding-left: 52px;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  padding-left: 56px;
+  border-top: 1px solid var(--borda);
+  flex-wrap: wrap;
 }
-.composer-acoes { display: flex; gap: 4px; }
+.composer-acoes { display: flex; gap: 2px; }
 .icone-acao {
   border: none;
   background: none;
   color: var(--primaria);
-  width: 38px; height: 38px;
+  width: 40px; height: 40px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 .icone-acao:hover { background: var(--primaria-fundo); }
+.icone-acao:active { transform: scale(0.9); }
 .icone-acao svg { width: 20px; height: 20px; }
+.icone-acao:disabled { color: var(--texto-fraco); cursor: not-allowed; }
+.icone-acao:disabled:hover { background: none; }
+
+/* ==========================================================================
+   Sistema de campos de texto
+   Antes cada tela reinventava o input (raio, padding e fonte diferentes
+   pra fazer a mesma coisa: comentário, e-mail, nome, enquete...). Agora
+   são duas variantes só, com estado de foco consistente.
+   ========================================================================== */
+.campo-texto {
+  width: 100%;
+  border: 1px solid var(--borda-forte);
+  background: var(--bg-elevado);
+  border-radius: var(--raio-pill);
+  padding: 10px 16px;
+  font-size: 14.5px;
+  font-family: inherit;
+  color: var(--texto);
+  transition: border-color var(--transicao-rapida), box-shadow var(--transicao-rapida);
+}
+.campo-texto::placeholder { color: var(--texto-fraco); }
+.campo-texto:focus { border-color: var(--primaria); box-shadow: 0 0 0 3px var(--primaria-fundo); }
+.campo-texto--quadrado { border-radius: var(--raio-sm); }
+.campo-texto--escuro {
+  border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+}
+.campo-texto--escuro::placeholder { color: rgba(255,255,255,0.4); }
+.campo-texto--escuro:focus { border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(220,174,108,0.16); }
+
+.campo-textarea {
+  width: 100%;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-sm);
+  padding: 10px 12px;
+  font-size: 14.5px;
+  font-family: inherit;
+  color: var(--texto);
+  resize: vertical;
+  transition: border-color var(--transicao-rapida), box-shadow var(--transicao-rapida);
+}
+.campo-textarea::placeholder { color: var(--texto-fraco); }
+.campo-textarea:focus { border-color: var(--primaria); box-shadow: 0 0 0 3px var(--primaria-fundo); }
 
 /* Posts ---------------------------------------------------------------- */
 .post {
@@ -345,7 +474,7 @@ input, textarea { font-family: inherit; }
   border-bottom: 1px solid var(--borda);
   transition: background 0.1s ease;
 }
-.post:hover { background: rgba(0,155,58,0.02); }
+.post:hover { background: var(--bg); }
 .post-corpo { flex: 1; min-width: 0; }
 .post-cabecalho {
   display: flex;
@@ -355,6 +484,7 @@ input, textarea { font-family: inherit; }
 }
 .post-cabecalho .nome { font-weight: 700; font-size: 15px; }
 .post-cabecalho .arroba, .post-cabecalho .tempo { color: var(--texto-fraco); font-size: 14px; }
+.post-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .post-mais {
   margin-left: auto;
   border: none;
@@ -612,8 +742,8 @@ input, textarea { font-family: inherit; }
   border: 1px solid var(--borda-forte);
   background: var(--bg-elevado);
   border-radius: var(--raio-pill);
-  padding: 6px 13px;
-  font-size: 12.5px;
+  padding: var(--botao-sm-pad);
+  font-size: var(--botao-sm-fonte);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -630,8 +760,8 @@ input, textarea { font-family: inherit; }
   color: #fff;
   border: none;
   border-radius: var(--raio-pill);
-  padding: 9px 22px;
-  font-size: 14px;
+  padding: var(--botao-md-pad);
+  font-size: var(--botao-md-fonte);
   font-weight: 700;
 }
 .botao-seguir.seguindo { background: transparent; color: var(--texto); border: 1px solid var(--borda-forte); }
@@ -640,8 +770,8 @@ input, textarea { font-family: inherit; }
   background: transparent;
   border: 1px solid var(--borda-forte);
   border-radius: var(--raio-pill);
-  padding: 9px 20px;
-  font-size: 14px;
+  padding: var(--botao-md-pad);
+  font-size: var(--botao-md-fonte);
   font-weight: 700;
   color: var(--texto);
 }
@@ -659,7 +789,7 @@ input, textarea { font-family: inherit; }
   border: 1px solid var(--borda-forte);
   background: var(--bg-elevado);
   border-radius: var(--raio-pill);
-  padding: 9px 17px;
+  padding: var(--botao-sm-pad);
   font-size: 13.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -849,6 +979,8 @@ input, textarea { font-family: inherit; }
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+.botao-enviar:hover:not(:disabled) { background: var(--primaria-escura); }
+.botao-enviar:active:not(:disabled) { transform: scale(0.9); }
 .botao-enviar:disabled { opacity: 0.5; }
 .botao-enviar svg { width: 18px; height: 18px; }
 .botao-icone-mini {
@@ -858,6 +990,7 @@ input, textarea { font-family: inherit; }
   flex-shrink: 0;
 }
 .botao-icone-mini:hover { background: var(--bg); color: var(--primaria); }
+.botao-icone-mini:active { transform: scale(0.9); }
 .mensagens-vazio {
   flex: 1; display: flex; align-items: center; justify-content: center;
   color: var(--texto-fraco); font-size: 14.5px;
@@ -979,10 +1112,10 @@ input, textarea { font-family: inherit; }
   background: var(--primaria);
   color: #fff; border: none;
   border-radius: var(--raio-pill);
-  padding: 10px 24px;
-  font-size: 14.5px; font-weight: 700;
+  padding: var(--botao-md-pad);
+  font-size: var(--botao-md-fonte); font-weight: 700;
 }
-.botao-publicar-final:hover { background: var(--primaria-escura); }
+.botao-publicar-final:hover:not(:disabled) { background: var(--primaria-escura); }
 .botao-publicar-final:disabled { background: var(--borda-forte); color: var(--texto-fraco); }
 
 .toast {
@@ -1046,7 +1179,8 @@ input, textarea { font-family: inherit; }
      "Publicar" pra fora da área visível (cortado, "escondido"). Aqui
      ele quebra em duas linhas, com as ações secundárias completas e o
      botão de publicar sempre visível por inteiro. */
-  .composer { padding: 14px 14px; }
+  .composer { margin: 10px 12px 6px; padding: 14px 14px; }
+  .atalho-oracao { padding: 0 16px; }
   .composer-topo .avatar { width: 38px !important; height: 38px !important; }
   .composer-rodape {
     flex-wrap: wrap;
@@ -1343,7 +1477,7 @@ input, textarea { font-family: inherit; }
 .botao-deus-respondeu {
   margin-top: 12px;
   align-self: flex-start;
-  padding: 9px 16px;
+  padding: var(--botao-sm-pad);
   border-radius: var(--raio-pill);
   border: 1px solid var(--dourado);
   background: var(--dourado-fundo);
@@ -1376,7 +1510,7 @@ input, textarea { font-family: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 18px;
+  padding: var(--botao-sm-pad);
   border-radius: var(--raio-pill);
   border: 1px solid var(--primaria);
   background: none;

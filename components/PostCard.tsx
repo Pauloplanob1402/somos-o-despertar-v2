@@ -67,11 +67,6 @@ export function PostCard({ post }: { post: Post }) {
           {post.mesaNome ? (
             <span className="tempo">· em {post.mesaEmoji} {post.mesaNome}</span>
           ) : null}
-          {ehPedido ? <span className="etiqueta-pedido">Pedido de oração</span> : null}
-          {ehTestemunho ? <span className="etiqueta-testemunho">🙌 Testemunho</span> : null}
-          {post.versiculoReferencia ? (
-            <span className="etiqueta-reflexao">refletindo sobre {post.versiculoReferencia}</span>
-          ) : null}
 
           <div style={{ position: "relative", marginLeft: "auto" }}>
             <button className="post-mais" onClick={() => setMenuAberto((v) => !v)}>
@@ -115,6 +110,16 @@ export function PostCard({ post }: { post: Post }) {
             ) : null}
           </div>
         </div>
+
+        {ehPedido || ehTestemunho || post.versiculoReferencia ? (
+          <div className="post-etiquetas">
+            {ehPedido ? <span className="etiqueta-pedido">Pedido de oração</span> : null}
+            {ehTestemunho ? <span className="etiqueta-testemunho">🙌 Testemunho</span> : null}
+            {post.versiculoReferencia ? (
+              <span className="etiqueta-reflexao">refletindo sobre {post.versiculoReferencia}</span>
+            ) : null}
+          </div>
+        ) : null}
 
         {ehTestemunho && post.pedidoOriginalTexto ? (
           <blockquote className="pedido-citado">
