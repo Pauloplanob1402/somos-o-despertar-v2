@@ -40,6 +40,14 @@ export const viewport: Viewport = {
   themeColor: "#B8663F",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  // Sem isso, no Android o teclado some por cima do rodapé de qualquer
+  // modal/composer: o navegador encolhe só o "visual viewport", mas
+  // 100vh/100dvh continuam do tamanho da tela inteira, então botões como
+  // "Publicar" ficam escondidos atrás do teclado. Com resizes-content, o
+  // layout inteiro (e o dvh) encolhe de verdade quando o teclado abre.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

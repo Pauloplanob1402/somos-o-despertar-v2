@@ -896,6 +896,10 @@ input, textarea { font-family: inherit; }
 .busca-vazio { padding: 60px 22px; text-align: center; color: var(--texto-fraco); }
 
 /* Modal de publicação -------------------------------------------------------*/
+/* Estrutura em coluna: cabeçalho e rodapé nunca rolam com o conteúdo — só
+   o miolo (.modal-corpo) tem scroll. É isso que garante que o botão
+   "Publicar" e o "X" fiquem SEMPRE visíveis, mesmo com texto grande ou
+   teclado aberto — nunca mais escondidos ou exigindo rolar pra achar. */
 .modal-fundo {
   position: fixed; inset: 0;
   background: rgba(7, 26, 18, 0.45);
@@ -912,16 +916,18 @@ input, textarea { font-family: inherit; }
   max-width: 560px;
   max-height: calc(100vh - 120px);
   max-height: calc(100dvh - 120px);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   box-shadow: var(--sombra-flutuante);
   animation: modal-entrar 0.25s cubic-bezier(.2,.8,.3,1) both;
+  display: flex;
+  flex-direction: column;
 }
 @keyframes modal-entrar { from { opacity: 0; transform: translateY(18px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .modal-topo {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--borda);
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 var(--borda);
 }
 .modal-topo h3 { font-size: 16px; }
 .fechar-modal {
@@ -931,7 +937,7 @@ input, textarea { font-family: inherit; }
   color: var(--texto-suave);
 }
 .fechar-modal:hover { background: var(--borda); color: var(--texto); }
-.modal-corpo { padding: 20px; }
+.modal-corpo { padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .modal-composer { display: flex; gap: 12px; }
 .modal-composer textarea {
   flex: 1;
@@ -945,8 +951,26 @@ input, textarea { font-family: inherit; }
 .modal-composer textarea::placeholder { color: var(--texto-fraco); }
 .modal-rodape {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px;
-  border-top: 1px solid var(--borda);
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  box-shadow: 0 -1px 0 var(--borda);
+  background: var(--bg-elevado);
+}
+
+/* Celular: composer ocupa a tela toda, como no Facebook/Instagram — sem
+   moldura flutuante, sem margem/backdrop visível nas bordas. */
+@media (max-width: 767px) {
+  .modal-fundo { padding: 0; align-items: stretch; }
+  .modal-caixa {
+    max-width: none;
+    max-height: none;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    animation: none;
+  }
+  .modal-topo { padding: calc(12px + env(safe-area-inset-top)) 16px 12px; }
+  .modal-composer textarea { font-size: 16.5px; }
 }
 .botao-publicar-final {
   background: var(--primaria);

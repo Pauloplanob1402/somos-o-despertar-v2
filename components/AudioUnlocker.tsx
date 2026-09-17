@@ -19,12 +19,19 @@ export function AudioUnlocker() {
     }
     function remover() {
       window.removeEventListener("pointerdown", destravar);
-      window.removeEventListener("keydown", destravar);
       window.removeEventListener("touchstart", destravar);
+      window.removeEventListener("touchend", destravar);
+      window.removeEventListener("click", destravar);
+      window.removeEventListener("keydown", destravar);
     }
+    // pointerdown/touchstart cobrem a maioria dos aparelhos, mas alguns
+    // navegadores em Android só contam o gesto como "de verdade" no
+    // click/touchend — por isso os cinco, pra não depender de um só.
     window.addEventListener("pointerdown", destravar, { once: true });
-    window.addEventListener("keydown", destravar, { once: true });
     window.addEventListener("touchstart", destravar, { once: true });
+    window.addEventListener("touchend", destravar, { once: true });
+    window.addEventListener("click", destravar, { once: true });
+    window.addEventListener("keydown", destravar, { once: true });
     return remover;
   }, []);
 

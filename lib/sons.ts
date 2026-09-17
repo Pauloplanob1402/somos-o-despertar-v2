@@ -46,6 +46,10 @@ function obterAudio(nome: NomeSom): HTMLAudioElement | null {
 export function tocarSom(nome: NomeSom) {
   const audio = obterAudio(nome);
   if (!audio) return;
+  // se o gesto de destravar ainda não rolou (ou falhou), tenta nessa
+  // hora mesmo — em vários navegadores Android isso já é suficiente
+  // depois que a pessoa navegou um pouco pelo site.
+  if (!destravado) destravarAudio();
   try {
     audio.currentTime = 0;
     audio.play().catch((erro: DOMException) => {
