@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./AuthContext";
+import { useApp } from "./AppContext";
 import { tocarSom } from "@/lib/sons";
 import type { ConversaResumo, MensagemReal, PerfilResumo } from "@/lib/types";
 
@@ -43,7 +44,7 @@ interface MensagensContextValue {
   fecharTelaConversa: () => void;
 
   selecionarConversa: (id: string) => void;
-  enviarMensagem: (texto: string) => Promise<void>;
+  enviarMensagem: (texto: string) => Promise<boolean>;
 
   buscarPessoas: (termo: string) => Promise<PessoaEncontrada[]>;
   iniciarConversaCom: (outroUsuarioId: string) => Promise<string | null>;
@@ -87,6 +88,7 @@ function linhaParaConversaResumo(linha: {
 
 export function MensagensProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { mostrarToast } = useApp();
   const [supabase] = useState(() => createClient());
 
   const [conversas, setConversas] = useState<ConversaResumo[]>([]);
@@ -112,9 +114,12 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.rpc("listar_minhas_conversas");
     if (!error && data) {
       setConversas(data.map(linhaParaConversaResumo));
+    } else if (error) {
+      console.warn("[mensagens] falha ao carregar lista de conversas:", error.message);
+      mostrarToast("Não deu pra atualizar suas conversas. Puxe pra atualizar.");
     }
     setCarregandoConversas(false);
-  }, [supabase]);
+  }, [supabase, mostrarToast]);
 
   // carrega a lista de conversas assim que há sessão, e escuta mudanças
   // em tempo real (mensagem nova em qualquer conversa -> recarrega a lista)
@@ -191,17 +196,21 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
             criadoEm: m.criado_em,
           }))
         );
+      } else if (error) {
+        console.warn("[mensagens] falha ao carregar mensagens da conversa:", error.message);
+        mostrarToast("Não deu pra abrir essa conversa agora. Tenta de novo.");
       }
       setCarregandoMensagens(false);
     },
-    [supabase]
+    [supabase, mostrarToast]
   );
 
   const selecionarConversa = useCallback(
     (id: string) => {
       setConversaAtivaId(id);
       carregarMensagens(id);
-      supabase.rpc("marcar_conversa_lida", { id_conversa: id }).then(() => {
+      supabase.rpc("marcar_conversa_lida", { id_conversa: id }).then(({ error }) => {
+        if (error) return; // contador de não-lidas é cosmético — não vale interromper o fluxo por isso
         setConversas((atual) =>
           atual.map((c) => (c.conversaId === id ? { ...c, naoLidas: 0 } : c))
         );
@@ -261,18 +270,29 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
   }, [conversaAtivaId, supabase, user]);
 
   const enviarMensagem = useCallback(
-    async (texto: string) => {
-      if (!conversaAtivaId || !user || !texto.trim()) return;
-      await supabase.from("mensagens").insert({
+    async (texto: string): Promise<boolean> => {
+      const textoLimpo = texto.trim();
+      if (!textoLimpo) return true; // nada pra mandar, não é uma falha
+      if (!conversaAtivaId || !user) {
+        mostrarToast("Sua sessão parece ter caído. Atualize a página e tente de novo.");
+        return false;
+      }
+      const { error } = await supabase.from("mensagens").insert({
         conversa_id: conversaAtivaId,
         autor_id: user.id,
-        texto: texto.trim(),
+        texto: textoLimpo,
       });
+      if (error) {
+        console.warn("[mensagens] falha ao enviar mensagem:", error.message);
+        mostrarToast("Sua mensagem não foi enviada. Tente de novo.");
+        return false;
+      }
       // a própria inserção já dispara os eventos realtime acima (tanto
       // pra essa janela quanto pra lista de conversas), então não
       // precisa atualizar o estado local aqui manualmente.
+      return true;
     },
-    [conversaAtivaId, user, supabase]
+    [conversaAtivaId, user, supabase, mostrarToast]
   );
 
   const buscarPessoas = useCallback(
@@ -285,8 +305,11 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
         .neq("id", user.id)
         .limit(8);
 
-      if (error || !data) return [];
-      return data as PessoaEncontrada[];
+      if (error) {
+        console.warn("[mensagens] falha ao buscar pessoas:", error.message);
+        return [];
+      }
+      return (data ?? []) as PessoaEncontrada[];
     },
     [supabase, user]
   );
@@ -296,12 +319,16 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.rpc("obter_ou_criar_conversa_pessoa", {
         outro_usuario_id: outroUsuarioId,
       });
-      if (error || !data) return null;
+      if (error || !data) {
+        console.warn("[mensagens] falha ao abrir/criar conversa:", error?.message);
+        mostrarToast("Não deu pra abrir essa conversa agora. Tente de novo.");
+        return null;
+      }
       await recarregarConversas();
       selecionarConversa(data as string);
       return data as string;
     },
-    [supabase, recarregarConversas, selecionarConversa]
+    [supabase, recarregarConversas, selecionarConversa, mostrarToast]
   );
 
   const limparMensagemRecebida = useCallback(() => setMensagemRecebida(null), []);

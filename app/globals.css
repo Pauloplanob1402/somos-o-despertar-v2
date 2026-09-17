@@ -750,7 +750,7 @@ input, textarea { font-family: inherit; }
 .comunidade-desc { font-size: 14.5px; color: var(--texto-suave); margin-top: 10px; max-width: 520px; }
 
 /* Mensagens -----------------------------------------------------------------*/
-.mensagens-layout { display: flex; height: 100vh; }
+.mensagens-layout { display: flex; height: 100vh; height: 100dvh; }
 .conversas-lista { width: 340px; flex-shrink: 0; border-right: 1px solid var(--borda); overflow-y: auto; }
 .conversas-busca { padding: 14px 16px; }
 .conversa-item {
@@ -819,11 +819,12 @@ input, textarea { font-family: inherit; }
 .bolha-autor { font-size: 12px; font-weight: 700; color: var(--primaria); margin-left: 15px; }
 
 .composer-mensagem {
-  padding: 14px 20px;
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--borda);
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 .composer-mensagem input {
   flex: 1;
@@ -844,6 +845,7 @@ input, textarea { font-family: inherit; }
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+.botao-enviar:disabled { opacity: 0.5; }
 .botao-enviar svg { width: 18px; height: 18px; }
 .botao-icone-mini {
   border: none; background: none; color: var(--texto-fraco);
@@ -1062,10 +1064,8 @@ input, textarea { font-family: inherit; }
 
   .mensagens-layout.tela-lista .janela-conversa { display: none; }
   .mensagens-layout.tela-conversa .conversas-lista { display: none; }
-  .conversas-lista { width: 100%; }
+  .conversas-lista { width: 100%; padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
   .conversa-cabecalho .voltar-mobile { display: inline-flex; }
-  .mensagens-corpo { padding-bottom: 100px; }
-  .composer-mensagem { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-elevado); }
   .grade-comunidades { grid-template-columns: 1fr; }
   .interesses-grade { grid-template-columns: 1fr; }
 }

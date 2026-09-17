@@ -182,9 +182,10 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
 
 function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
   const { user } = useAuth();
-  const { conversas, conversaAtivaId, mensagensAtivas, carregandoMensagens, enviarMensagem } = useMensagens();
+  const { conversas, carregandoConversas, conversaAtivaId, mensagensAtivas, carregandoMensagens, enviarMensagem } = useMensagens();
   const { online } = usePresence();
   const [texto, setTexto] = useState("");
+  const [enviando, setEnviando] = useState(false);
   const [participantes, setParticipantes] = useState<Record<string, { nome: string; cor: string }>>({});
 
   const conversa = conversas.find((c) => c.conversaId === conversaAtivaId);
@@ -211,16 +212,47 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
     return () => { ativo = false; };
   }, [conversa]);
 
-  if (!conversaAtivaId || !conversa) {
-    return <div className="janela-conversa"><div className="mensagens-vazio">Selecione uma conversa</div></div>;
+  if (!conversaAtivaId) {
+    // no celular a lista fica escondida na tela de conversa, então nunca
+    // deixamos essa tela "vazia" sem jeito de voltar pra lista.
+    return (
+      <div className="janela-conversa">
+        <button className="voltar-mobile" onClick={onVoltar} style={{ display: "inline-flex", padding: 14 }}>
+          <IconVoltar />
+        </button>
+        <div className="mensagens-vazio">Selecione uma conversa</div>
+      </div>
+    );
+  }
+
+  if (!conversa) {
+    // conversaAtivaId aponta pra algo que ainda não está na lista — ou a
+    // lista ainda está carregando (link direto ?c=, primeiro acesso), ou
+    // a conversa não existe/não pertence a esse usuário. Nunca mostramos
+    // uma tela travada sem explicação nem saída.
+    return (
+      <div className="janela-conversa">
+        <button className="voltar-mobile" onClick={onVoltar} style={{ display: "inline-flex", padding: 14 }}>
+          <IconVoltar />
+        </button>
+        <div className="mensagens-vazio">
+          {carregandoConversas ? "Carregando conversa…" : "Essa conversa não foi encontrada."}
+        </div>
+      </div>
+    );
   }
 
   const estaOnline = conversa.outroId ? online.has(conversa.outroId) : false;
 
   async function handleEnviar() {
-    if (!texto.trim()) return;
-    await enviarMensagem(texto.trim());
-    setTexto("");
+    const paraEnviar = texto.trim();
+    if (!paraEnviar || enviando) return;
+    setEnviando(true);
+    // só limpa o campo se realmente foi enviada — se falhar, o texto
+    // continua ali pra pessoa poder tentar de novo sem reescrever tudo.
+    const ok = await enviarMensagem(paraEnviar);
+    if (ok) setTexto("");
+    setEnviando(false);
   }
 
   return (
@@ -289,6 +321,7 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
         <button
           type="submit"
           className="botao-enviar"
+          disabled={enviando || !texto.trim()}
           onClick={(e) => { e.preventDefault(); handleEnviar(); }}
         >
           <IconEnviar />
