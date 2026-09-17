@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { Avatar } from "@/components/Avatar";
@@ -37,11 +38,18 @@ export default function InicioPage() {
             <button className="icone-acao" title="Enquete"><IconEnquete /></button>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
+            <Link
+              href="/mural-oracao"
+              className="botao-mini"
+              onClick={(e) => e.stopPropagation()}
+            >
+              🙏 Mural de oração
+            </Link>
             <button
               className="botao-mini"
               onClick={(e) => { e.stopPropagation(); abrirComposer({ tipo: "oracao" }); }}
             >
-              🙏 Pedir oração
+              Pedir oração
             </button>
             <button className="botao-publicar-final" style={{ padding: "9px 22px" }}>
               Publicar

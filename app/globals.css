@@ -1290,3 +1290,99 @@ input, textarea { font-family: inherit; }
 .oracao-contagem:hover { text-decoration: underline; }
 .oracao-contagem-vazia { font-size: 13px; color: var(--texto-fraco); }
 .oracao-pessoas { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* =====================================================================
+   Mural de oração
+   ===================================================================== */
+.mural-oracao-topo {
+  margin: 0 22px 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.mural-oracao-intro {
+  margin: 0;
+  font-size: 14px;
+  color: var(--texto-suave);
+  line-height: 1.5;
+}
+
+/* =====================================================================
+   Balões flutuantes (mensagem / notificação ao vivo) — estilo Messenger.
+   Empilham no canto inferior direito no desktop; no celular sobem pro
+   topo, pra não disputar espaço com a barra de navegação fixa embaixo.
+   ===================================================================== */
+.toasts-flutuantes {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 320;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  max-width: 340px;
+}
+
+.toast-flutuante {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  animation: toast-flutuante-entrar 0.25s ease;
+}
+.toast-flutuante:hover { border-color: var(--borda-forte); }
+
+.toast-flutuante-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.toast-flutuante-texto b { font-size: 13.5px; }
+.toast-flutuante-texto span {
+  font-size: 13px;
+  color: var(--texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.toast-flutuante-fechar {
+  margin-left: auto;
+  align-self: flex-start;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--texto-fraco);
+  padding: 2px 4px;
+}
+.toast-flutuante-fechar:hover { color: var(--texto); }
+
+@keyframes toast-flutuante-entrar {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 760px) {
+  .toasts-flutuantes {
+    left: 12px;
+    right: 12px;
+    top: 60px;
+    bottom: auto;
+    max-width: none;
+    flex-direction: column;
+  }
+}

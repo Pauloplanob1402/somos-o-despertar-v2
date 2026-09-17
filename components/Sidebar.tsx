@@ -8,7 +8,7 @@ import { useMensagens } from "@/context/MensagensContext";
 import { useNotificacoes } from "@/context/NotificacoesContext";
 import { Avatar } from "./Avatar";
 import {
-  IconInicio, IconExplorar, IconMesas, IconPessoas,
+  IconInicio, IconExplorar, IconMesas, IconPessoas, IconOracao,
   IconMensagens, IconNotificacoes, IconSalvos, IconPerfil,
 } from "./icons";
 
@@ -25,6 +25,7 @@ export function Sidebar() {
     { href: "/inicio", label: "Início", Icone: IconInicio },
     { href: "/explorar", label: "Descobrir", Icone: IconExplorar },
     { href: "/mesas", label: "Mesas", Icone: IconMesas },
+    { href: "/mural-oracao", label: "Mural de oração", Icone: IconOracao },
     { href: "/pessoas", label: "Pessoas", Icone: IconPessoas },
     { href: "/mensagens", label: "Mensagens", Icone: IconMensagens, badge: mensagensNaoLidas },
     { href: "/notificacoes", label: "Notificações", Icone: IconNotificacoes, badge: notificacoesNaoLidas },

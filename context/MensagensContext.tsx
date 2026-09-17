@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -15,6 +16,15 @@ import type { ConversaResumo, MensagemReal, PerfilResumo } from "@/lib/types";
 
 /** resultado da busca por @arroba pra iniciar uma conversa nova */
 type PessoaEncontrada = PerfilResumo;
+
+/** um balão de mensagem nova, pra quando a conversa NÃO está aberta na tela */
+export interface MensagemRecebidaPopup {
+  conversaId: string;
+  autorNome: string;
+  autorArroba: string | null;
+  autorCor: string;
+  texto: string;
+}
 
 interface MensagensContextValue {
   conversas: ConversaResumo[];
@@ -29,6 +39,10 @@ interface MensagensContextValue {
 
   buscarPessoas: (termo: string) => Promise<PessoaEncontrada[]>;
   iniciarConversaCom: (outroUsuarioId: string) => Promise<string | null>;
+
+  /** balão da mensagem que acabou de chegar numa conversa fechada */
+  mensagemRecebida: MensagemRecebidaPopup | null;
+  limparMensagemRecebida: () => void;
 }
 
 const MensagensContext = createContext<MensagensContextValue | null>(null);
@@ -73,6 +87,15 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
   const [conversaAtivaId, setConversaAtivaId] = useState<string | null>(null);
   const [mensagensAtivas, setMensagensAtivas] = useState<MensagemReal[]>([]);
   const [carregandoMensagens, setCarregandoMensagens] = useState(false);
+  const [mensagemRecebida, setMensagemRecebida] = useState<MensagemRecebidaPopup | null>(null);
+
+  // a conversa aberta muda com frequência; o canal abaixo é montado uma
+  // vez só, então lê sempre o valor mais recente por aqui, não pela
+  // variável capturada no closure do efeito.
+  const conversaAtivaRef = useRef<string | null>(null);
+  useEffect(() => {
+    conversaAtivaRef.current = conversaAtivaId;
+  }, [conversaAtivaId]);
 
   const recarregarConversas = useCallback(async () => {
     const { data, error } = await supabase.rpc("listar_minhas_conversas");
@@ -93,7 +116,32 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "mensagens" },
-        () => recarregarConversas()
+        (payload) => {
+          recarregarConversas();
+
+          // balão estilo Messenger: só quando a mensagem não é minha e a
+          // conversa dela não é a que já está aberta na tela (aí ela
+          // chega direto na janela, ver o outro efeito abaixo).
+          const nova = payload.new as { conversa_id: string; autor_id: string; texto: string };
+          if (nova.autor_id === user.id) return;
+          if (nova.conversa_id === conversaAtivaRef.current) return;
+
+          supabase
+            .from("perfis")
+            .select("nome, arroba, cor")
+            .eq("id", nova.autor_id)
+            .single()
+            .then(({ data: autor }) => {
+              if (!autor) return;
+              setMensagemRecebida({
+                conversaId: nova.conversa_id,
+                autorNome: autor.nome,
+                autorArroba: autor.arroba,
+                autorCor: autor.cor,
+                texto: nova.texto,
+              });
+            });
+        }
       )
       .on(
         "postgres_changes",
@@ -239,6 +287,8 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
     [supabase, recarregarConversas, selecionarConversa]
   );
 
+  const limparMensagemRecebida = useCallback(() => setMensagemRecebida(null), []);
+
   const value = useMemo<MensagensContextValue>(
     () => ({
       conversas,
@@ -250,11 +300,14 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       enviarMensagem,
       buscarPessoas,
       iniciarConversaCom,
+      mensagemRecebida,
+      limparMensagemRecebida,
     }),
     [
       conversas, carregandoConversas,
       conversaAtivaId, mensagensAtivas, carregandoMensagens,
       selecionarConversa, enviarMensagem, buscarPessoas, iniciarConversaCom,
+      mensagemRecebida, limparMensagemRecebida,
     ]
   );
 

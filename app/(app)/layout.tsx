@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { RightRail } from "@/components/RightRail";
 import { TopoMobile, NavMobile } from "@/components/MobileNav";
 import { ComposeModal } from "@/components/ComposeModal";
+import { ToastsFlutuantes } from "@/components/ToastsFlutuantes";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
       <NavMobile />
       <ComposeModal />
+      <ToastsFlutuantes />
     </>
   );
 }

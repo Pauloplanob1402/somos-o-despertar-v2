@@ -71,6 +71,12 @@ export const IconLink = (p: IconProps) => (
     <path d="M13.5 16.5 12 18a3.5 3.5 0 0 1-5-5l1.5-1.5" />
   </svg>
 );
+export const IconOracao = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3c1.8 2.2 2.8 4 2.8 5.8a2.8 2.8 0 1 1-5.6 0C9.2 7 10.2 5.2 12 3z" />
+    <path d="M6 21c0-3.5 2.7-5 6-5s6 1.5 6 5" />
+  </svg>
+);
 export const IconFechar = (p: IconProps) => (
   <svg {...base({ strokeWidth: 2, ...p })}><path d="M6 6l12 12M18 6 6 18" /></svg>
 );
