@@ -53,6 +53,7 @@ export function CompletarCadastro() {
           placeholder="seu@email.com"
           style={{
             flex: 1,
+            minWidth: 0,
             border: "1px solid var(--borda-forte)",
             borderRadius: "var(--raio-pill)",
             padding: "9px 14px",

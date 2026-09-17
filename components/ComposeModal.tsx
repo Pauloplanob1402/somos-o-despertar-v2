@@ -278,7 +278,7 @@ export function ComposeModal() {
 
           <div className="modal-composer">
             <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} tamanho={46} />
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               {!modoEnquete ? (
                 <textarea
                   autoFocus

@@ -579,7 +579,7 @@ input, textarea { font-family: inherit; }
   padding: 11px 16px;
   margin-bottom: 20px;
 }
-.busca-rail input { border: none; background: none; flex: 1; font-size: 14px; outline: none; }
+.busca-rail input { border: none; background: none; flex: 1; min-width: 0; font-size: 14px; outline: none; }
 .busca-rail svg { width: 17px; height: 17px; color: var(--texto-fraco); flex-shrink: 0; }
 
 .rail-caixa {
@@ -828,6 +828,7 @@ input, textarea { font-family: inherit; }
 }
 .composer-mensagem input {
   flex: 1;
+  min-width: 0;
   border: 1px solid var(--borda);
   background: var(--bg);
   border-radius: var(--raio-pill);
@@ -888,7 +889,7 @@ input, textarea { font-family: inherit; }
   border-radius: var(--raio-pill);
   padding: 12px 18px;
 }
-.busca-input-grande input { border: none; background: none; flex: 1; font-size: 15px; outline: none; }
+.busca-input-grande input { border: none; background: none; flex: 1; min-width: 0; font-size: 15px; outline: none; }
 .busca-input-grande svg { width: 18px; height: 18px; color: var(--texto-fraco); }
 .busca-secao { padding: 18px 22px; border-bottom: 8px solid var(--bg); }
 .busca-secao h4 { font-size: 15px; margin-bottom: 10px; }
@@ -909,6 +910,10 @@ input, textarea { font-family: inherit; }
   border-radius: var(--raio-lg);
   width: 100%;
   max-width: 560px;
+  max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: var(--sombra-flutuante);
   animation: modal-entrar 0.25s cubic-bezier(.2,.8,.3,1) both;
 }
