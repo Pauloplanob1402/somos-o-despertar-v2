@@ -128,12 +128,14 @@ export function ComentariosDoPost({ post }: { post: Post }) {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+      <form
+        style={{ display: "flex", gap: 8, marginTop: 14 }}
+        onSubmit={(e) => { e.preventDefault(); enviar(); }}
+      >
         <input
           type="text"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
           placeholder="Escreva um comentário…"
           style={{
             flex: 1,
@@ -143,10 +145,10 @@ export function ComentariosDoPost({ post }: { post: Post }) {
             fontSize: 13.5,
           }}
         />
-        <button className="botao-mini" onClick={enviar} disabled={enviando || !texto.trim()}>
+        <button type="submit" className="botao-mini" disabled={enviando || !texto.trim()}>
           {enviando ? "…" : "Enviar"}
         </button>
-      </div>
+      </form>
     </div>
   );
 }

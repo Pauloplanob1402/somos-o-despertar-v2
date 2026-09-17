@@ -1,11 +1,10 @@
 "use client";
 
 /**
- * Os dois sons do app: um "ding" de duas notas pra mensagem (o gancho
- * mais forte de retorno — é o que faz alguém abrir o chat na hora) e um
- * "pop" de uma nota só, mais discreto, pra curtida/comentário/seguidor/
- * oração, só pra dar sinal de vida sem chamar tanta atenção quanto uma
- * mensagem de verdade.
+ * Os dois sons do app: um de mensagem (o gancho mais forte de retorno —
+ * é o que faz alguém abrir o chat na hora) e um mais discreto, de uma
+ * nota só, pra curtida/comentário/seguidor/oração — só pra dar sinal de
+ * vida sem chamar tanta atenção quanto uma mensagem de verdade.
  *
  * Os <audio> ficam pré-criados e são reaproveitados a cada toque, em vez
  * de instanciar `new Audio()` de novo a cada evento — silencioso o

@@ -274,19 +274,21 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
         )}
       </div>
 
-      <div className="composer-mensagem">
-        <button className="botao-icone-mini"><IconEmoji /></button>
-        <button className="botao-icone-mini"><IconFoto /></button>
+      <form
+        className="composer-mensagem"
+        onSubmit={(e) => { e.preventDefault(); handleEnviar(); }}
+      >
+        <button type="button" className="botao-icone-mini"><IconEmoji /></button>
+        <button type="button" className="botao-icone-mini"><IconFoto /></button>
         <input
           type="text"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") handleEnviar(); }}
           placeholder="Escreva uma mensagem..."
         />
-        <button className="botao-icone-mini"><IconAudio /></button>
-        <button className="botao-enviar" onClick={handleEnviar}><IconEnviar /></button>
-      </div>
+        <button type="button" className="botao-icone-mini"><IconAudio /></button>
+        <button type="submit" className="botao-enviar"><IconEnviar /></button>
+      </form>
     </div>
   );
 }
