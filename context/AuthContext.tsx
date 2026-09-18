@@ -87,7 +87,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_evento, session) => {
-      setUser(session?.user ?? null);
+      // onAuthStateChange dispara não só em login/logout, mas também em
+      // TOKEN_REFRESHED (renovação automática do token) e sempre que a
+      // aba volta a ficar visível — e a cada disparo o SDK devolve um
+      // objeto `user` NOVO, mesmo que seja a mesma pessoa. Setando ele
+      // sem checar antes, cada troca de aba trocava a referência de
+      // `user`, e isso recriava (fechava e reabria) o canal de realtime
+      // de mensagens em contextos que dependem dele — janela em que
+      // mensagens (e o som) se perdiam. Aqui só troca a referência se o
+      // id da pessoa realmente mudou.
+      setUser((atual) =>
+        atual?.id === session?.user?.id ? atual : session?.user ?? null
+      );
       if (session?.user) {
         buscarPerfil(session.user.id);
       } else {
