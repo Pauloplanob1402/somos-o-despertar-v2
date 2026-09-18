@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useMensagens } from "@/context/MensagensContext";
@@ -182,11 +182,12 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
 
 function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
   const { user } = useAuth();
-  const { conversas, carregandoConversas, conversaAtivaId, mensagensAtivas, carregandoMensagens, enviarMensagem } = useMensagens();
+  const { conversas, carregandoConversas, conversaAtivaId, mensagensAtivas, carregandoMensagens, enviarMensagem, enviarImagem, enviandoImagem } = useMensagens();
   const { online } = usePresence();
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [participantes, setParticipantes] = useState<Record<string, { nome: string; cor: string }>>({});
+  const inputImagemRef = useRef<HTMLInputElement>(null);
 
   const conversa = conversas.find((c) => c.conversaId === conversaAtivaId);
 
@@ -255,6 +256,13 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
     setEnviando(false);
   }
 
+  async function handleArquivoSelecionado(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo depois
+    if (!arquivo) return;
+    await enviarImagem(arquivo);
+  }
+
   return (
     <div className="janela-conversa">
       <div className="conversa-cabecalho">
@@ -290,19 +298,30 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
           <div className="msg-dia">Essa conversa ainda não tem mensagens.</div>
         ) : (
           mensagensAtivas.map((m) => {
-            if (m.autorId === user?.id) return <div className="bolha enviada" key={m.id}>{m.texto}</div>;
+            const conteudo = m.imagemUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={m.imagemUrl} alt="" className="bolha-imagem" />
+                {m.texto ? <div className="bolha-legenda">{m.texto}</div> : null}
+              </>
+            ) : (
+              m.texto
+            );
+            const classeBolha = `bolha ${m.autorId === user?.id ? "enviada" : "recebida"} ${m.imagemUrl ? "com-imagem" : ""}`;
+            if (m.autorId === user?.id) return <div className={classeBolha} key={m.id}>{conteudo}</div>;
             if (conversa.tipo === "grupo") {
               const autor = participantes[m.autorId];
               return (
                 <div className="bolha-grupo recebida" key={m.id}>
                   <span className="bolha-autor">{autor?.nome ?? "…"}</span>
-                  <div className="bolha recebida">{m.texto}</div>
+                  <div className={classeBolha}>{conteudo}</div>
                 </div>
               );
             }
-            return <div className="bolha recebida" key={m.id}>{m.texto}</div>;
+            return <div className={classeBolha} key={m.id}>{conteudo}</div>;
           })
         )}
+        {enviandoImagem ? <div className="bolha enviada com-imagem bolha-enviando">Enviando foto…</div> : null}
       </div>
 
       <form
@@ -310,7 +329,22 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
         onSubmit={(e) => { e.preventDefault(); handleEnviar(); }}
       >
         <button type="button" className="botao-icone-mini" aria-label="Inserir emoji"><IconEmoji /></button>
-        <button type="button" className="botao-icone-mini" aria-label="Anexar foto"><IconFoto /></button>
+        <input
+          ref={inputImagemRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={handleArquivoSelecionado}
+          style={{ display: "none" }}
+        />
+        <button
+          type="button"
+          className="botao-icone-mini"
+          aria-label="Anexar foto"
+          disabled={enviandoImagem}
+          onClick={() => inputImagemRef.current?.click()}
+        >
+          <IconFoto />
+        </button>
         <input
           type="text"
           value={texto}

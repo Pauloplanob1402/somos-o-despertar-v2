@@ -19,6 +19,10 @@ import type { ConversaResumo, MensagemReal, PerfilResumo } from "@/lib/types";
 /** resultado da busca por @arroba pra iniciar uma conversa nova */
 type PessoaEncontrada = PerfilResumo;
 
+const TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024; // 5 MB — mesmo limite do composer de posts
+const TIPOS_ACEITOS_IMAGEM = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+
 /** um balão de mensagem nova, pra quando a conversa NÃO está aberta na tela */
 export interface MensagemRecebidaPopup {
   conversaId: string;
@@ -45,6 +49,10 @@ interface MensagensContextValue {
 
   selecionarConversa: (id: string) => void;
   enviarMensagem: (texto: string) => Promise<boolean>;
+  /** envia uma imagem (com legenda opcional) pra conversa ativa — faz o
+   *  upload pro storage e insere a mensagem. */
+  enviarImagem: (arquivo: File, legenda?: string) => Promise<boolean>;
+  enviandoImagem: boolean;
 
   buscarPessoas: (termo: string) => Promise<PessoaEncontrada[]>;
   iniciarConversaCom: (outroUsuarioId: string) => Promise<string | null>;
@@ -138,7 +146,12 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
           // balão estilo Messenger: só quando a mensagem não é minha e a
           // conversa dela não é a que já está aberta na tela (aí ela
           // chega direto na janela, ver o outro efeito abaixo).
-          const nova = payload.new as { conversa_id: string; autor_id: string; texto: string };
+          const nova = payload.new as {
+            conversa_id: string;
+            autor_id: string;
+            texto: string | null;
+            imagem_url: string | null;
+          };
           console.log("[mensagens] INSERT recebido via realtime:", nova);
           if (nova.autor_id === user.id) return;
 
@@ -161,7 +174,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
                 autorNome: autor.nome,
                 autorArroba: autor.arroba,
                 autorCor: autor.cor,
-                texto: nova.texto,
+                texto: nova.texto ?? (nova.imagem_url ? "📷 Foto" : ""),
               });
             });
         }
@@ -208,7 +221,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       setCarregandoMensagens(true);
       const { data, error } = await supabase
         .from("mensagens")
-        .select("id, conversa_id, autor_id, texto, criado_em")
+        .select("id, conversa_id, autor_id, texto, imagem_url, criado_em")
         .eq("conversa_id", id)
         .order("criado_em", { ascending: true });
 
@@ -219,6 +232,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
             conversaId: m.conversa_id,
             autorId: m.autor_id,
             texto: m.texto,
+            imagemUrl: m.imagem_url,
             criadoEm: m.criado_em,
           }))
         );
@@ -265,7 +279,8 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
             id: string;
             conversa_id: string;
             autor_id: string;
-            texto: string;
+            texto: string | null;
+            imagem_url: string | null;
             criado_em: string;
           };
           setMensagensAtivas((atual) => {
@@ -277,6 +292,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
                 conversaId: nova.conversa_id,
                 autorId: nova.autor_id,
                 texto: nova.texto,
+                imagemUrl: nova.imagem_url,
                 criadoEm: nova.criado_em,
               },
             ];
@@ -295,10 +311,8 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
     };
   }, [conversaAtivaId, supabase, user]);
 
-  const enviarMensagem = useCallback(
-    async (texto: string): Promise<boolean> => {
-      const textoLimpo = texto.trim();
-      if (!textoLimpo) return true; // nada pra mandar, não é uma falha
+  const enviarConteudo = useCallback(
+    async (texto: string | null, imagemUrl: string | null): Promise<boolean> => {
       if (!conversaAtivaId || !user) {
         mostrarToast("Sua sessão parece ter caído. Atualize a página e tente de novo.");
         return false;
@@ -306,7 +320,8 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("mensagens").insert({
         conversa_id: conversaAtivaId,
         autor_id: user.id,
-        texto: textoLimpo,
+        texto,
+        imagem_url: imagemUrl,
       });
       if (error) {
         console.warn("[mensagens] falha ao enviar mensagem:", error.message);
@@ -319,6 +334,57 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       return true;
     },
     [conversaAtivaId, user, supabase, mostrarToast]
+  );
+
+  const enviarMensagem = useCallback(
+    async (texto: string): Promise<boolean> => {
+      const textoLimpo = texto.trim();
+      if (!textoLimpo) return true; // nada pra mandar, não é uma falha
+      return enviarConteudo(textoLimpo, null);
+    },
+    [enviarConteudo]
+  );
+
+  const [enviandoImagem, setEnviandoImagem] = useState(false);
+
+  const enviarImagem = useCallback(
+    async (arquivo: File, legenda?: string): Promise<boolean> => {
+      if (!conversaAtivaId || !user) {
+        mostrarToast("Sua sessão parece ter caído. Atualize a página e tente de novo.");
+        return false;
+      }
+      if (!TIPOS_ACEITOS_IMAGEM.includes(arquivo.type)) {
+        mostrarToast("Use uma imagem JPG, PNG, WEBP ou GIF.");
+        return false;
+      }
+      if (arquivo.size > TAMANHO_MAXIMO_IMAGEM) {
+        mostrarToast("A imagem precisa ter até 5 MB.");
+        return false;
+      }
+
+      setEnviandoImagem(true);
+      try {
+        const extensao = arquivo.name.split(".").pop() || "jpg";
+        const caminho = `${user.id}/mensagens/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`;
+
+        const { error: erroUpload } = await supabase.storage
+          .from("midias")
+          .upload(caminho, arquivo, { contentType: arquivo.type });
+
+        if (erroUpload) {
+          console.warn("[mensagens] falha ao enviar imagem:", erroUpload.message);
+          mostrarToast("Não conseguimos enviar a imagem. Tenta de novo.");
+          return false;
+        }
+
+        const url = supabase.storage.from("midias").getPublicUrl(caminho).data.publicUrl;
+        const legendaLimpa = legenda?.trim() || null;
+        return await enviarConteudo(legendaLimpa, url);
+      } finally {
+        setEnviandoImagem(false);
+      }
+    },
+    [conversaAtivaId, user, supabase, mostrarToast, enviarConteudo]
   );
 
   const buscarPessoas = useCallback(
@@ -371,6 +437,8 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       fecharTelaConversa,
       selecionarConversa,
       enviarMensagem,
+      enviarImagem,
+      enviandoImagem,
       buscarPessoas,
       iniciarConversaCom,
       mensagemRecebida,
@@ -380,7 +448,8 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       conversas, carregandoConversas,
       conversaAtivaId, mensagensAtivas, carregandoMensagens,
       telaConversaAberta, abrirTelaConversa, fecharTelaConversa,
-      selecionarConversa, enviarMensagem, buscarPessoas, iniciarConversaCom,
+      selecionarConversa, enviarMensagem, enviarImagem, enviandoImagem,
+      buscarPessoas, iniciarConversaCom,
       mensagemRecebida, limparMensagemRecebida,
     ]
   );

@@ -167,7 +167,8 @@ export interface MensagemReal {
   id: string;
   conversaId: string;
   autorId: string;
-  texto: string;
+  texto: string | null;
+  imagemUrl: string | null;
   criadoEm: string;
 }
 

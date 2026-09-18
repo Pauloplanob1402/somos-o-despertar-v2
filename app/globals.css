@@ -1040,6 +1040,21 @@ input, textarea { font-family: inherit; }
 .bolha-grupo.recebida { align-self: flex-start; }
 .bolha-autor { font-size: 12px; font-weight: 700; color: var(--primaria); margin-left: 15px; }
 
+/* Mensagem de imagem — a bolha vira só uma moldura fina em vez do fundo
+   colorido cheio (que ficaria estranho atrás de uma foto), a legenda
+   (se houver) mantém o texto normal da bolha. */
+.bolha.com-imagem { padding: 4px; background: transparent; }
+.bolha.com-imagem.enviada, .bolha.com-imagem.recebida { border: 1px solid var(--borda); }
+.bolha-imagem {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+.bolha-legenda { padding: 8px 6px 4px; }
+.bolha-enviando { opacity: 0.6; font-size: 13px; font-style: italic; }
+
 .composer-mensagem {
   padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--borda);
