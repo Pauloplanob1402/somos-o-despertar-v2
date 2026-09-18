@@ -53,7 +53,7 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
   const { online } = usePresence();
 
   const [termoBusca, setTermoBusca] = useState("");
-  const [resultados, setResultados] = useState<{ id: string; nome: string; arroba: string; cor: string }[]>([]);
+  const [resultados, setResultados] = useState<{ id: string; nome: string; arroba: string; cor: string; avatarUrl: string | null }[]>([]);
   const [buscando, setBuscando] = useState(false);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
                   onClick={() => handleIniciar(r.id)}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", width: "100%", background: "none", border: "none", textAlign: "left" }}
                 >
-                  <Avatar nome={r.nome} cor={r.cor} tamanho={34} />
+                  <Avatar nome={r.nome} cor={r.cor} avatarUrl={r.avatarUrl} tamanho={34} />
                   <span>
                     <div style={{ fontWeight: 700, fontSize: 13.5 }}>{r.nome}</div>
                     <div style={{ color: "var(--texto-fraco)", fontSize: 12.5 }}>@{r.arroba}</div>
@@ -158,6 +158,7 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
                       arroba={conv.outroArroba}
                       nome={conv.outroNome ?? "?"}
                       cor={conv.outroCor ?? "#B8663F"}
+                      avatarUrl={conv.outroAvatarUrl}
                       tamanho={48}
                     />
                   )}
@@ -276,6 +277,7 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
             arroba={conversa.outroArroba}
             nome={conversa.outroNome ?? "?"}
             cor={conversa.outroCor ?? "#B8663F"}
+            avatarUrl={conversa.outroAvatarUrl}
             tamanho={40}
           />
         )}

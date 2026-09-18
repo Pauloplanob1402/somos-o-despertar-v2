@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
 export default function EntrarPage() {
-  const { entrarComGoogleDireto, entrarComEmailExistente } = useAuth();
+  const { entrarComGoogleDireto, entrarComEmailExistente, entrarComSenha } = useAuth();
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [usarSenha, setUsarSenha] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -17,7 +19,18 @@ export default function EntrarPage() {
     if (erro) setErro(erro);
   }
 
-  async function handleEmail() {
+  async function handleEntrarComSenha() {
+    if (!email.trim() || !senha) return;
+    setEnviando(true);
+    setErro(null);
+    setMensagem(null);
+    const { erro } = await entrarComSenha(email.trim(), senha);
+    setEnviando(false);
+    if (erro) setErro(erro);
+    // sem erro: onAuthStateChange cuida do redirecionamento pro app.
+  }
+
+  async function handleLinkMagico() {
     if (!email.trim()) return;
     setEnviando(true);
     setErro(null);
@@ -55,13 +68,30 @@ export default function EntrarPage() {
               placeholder="seu@email.com"
               className="campo-texto campo-texto--escuro"
             />
+            {usarSenha ? (
+              <input
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="Sua senha"
+                className="campo-texto campo-texto--escuro"
+                autoComplete="current-password"
+              />
+            ) : null}
             <button
               className="botao-contorno"
               style={{ width: "100%", borderColor: "rgba(255,255,255,0.25)", color: "#fff" }}
-              onClick={handleEmail}
-              disabled={enviando || !email.trim()}
+              onClick={usarSenha ? handleEntrarComSenha : handleLinkMagico}
+              disabled={enviando || !email.trim() || (usarSenha && !senha)}
             >
-              {enviando ? "Enviando…" : "Enviar link de acesso"}
+              {enviando ? "Entrando…" : usarSenha ? "Entrar com senha" : "Enviar link de acesso"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setUsarSenha((v) => !v); setErro(null); setMensagem(null); }}
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
+            >
+              {usarSenha ? "Prefiro entrar por link no e-mail" : "Prefiro entrar com senha"}
             </button>
           </div>
 

@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 export function CompletarCadastro() {
   const { ehAnonimo, entrarComGoogle, enviarLinkPorEmail } = useAuth();
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -19,22 +20,22 @@ export function CompletarCadastro() {
   }
 
   async function handleEmail() {
-    if (!email.trim()) return;
+    if (!email.trim() || senha.length < 6) return;
     setEnviando(true);
     setErro(null);
     setMensagem(null);
-    const { erro } = await enviarLinkPorEmail(email.trim());
+    const { erro } = await enviarLinkPorEmail(email.trim(), senha);
     setEnviando(false);
     if (erro) setErro(erro);
-    else setMensagem("Te mandamos um link de confirmação — clica nele pra terminar.");
+    else setMensagem("Te mandamos um link de confirmação — clica nele pra terminar. Depois disso já dá pra entrar com e-mail e senha em qualquer aparelho.");
   }
 
   return (
     <div className="rail-caixa">
       <h3>Salve seu progresso</h3>
       <p style={{ fontSize: 13.5, color: "var(--texto-suave)", marginBottom: 14 }}>
-        Você ainda está numa sessão temporária. Adicione um e-mail ou entre com o Google
-        pra não perder nada se trocar de aparelho.
+        Você ainda está numa sessão temporária. Crie uma conta com e-mail e senha
+        (ou entre com o Google) pra não perder nada se trocar de aparelho.
       </p>
 
       <button
@@ -45,17 +46,29 @@ export function CompletarCadastro() {
         Continuar com Google
       </button>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com"
           className="campo-texto"
-          style={{ flex: 1, minWidth: 0 }}
         />
-        <button className="botao-mini" onClick={handleEmail} disabled={enviando || !email.trim()}>
-          {enviando ? "Enviando…" : "Enviar link"}
+        <input
+          type="password"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          placeholder="Crie uma senha (mín. 6 caracteres)"
+          className="campo-texto"
+          autoComplete="new-password"
+        />
+        <button
+          className="botao-mini"
+          style={{ width: "100%" }}
+          onClick={handleEmail}
+          disabled={enviando || !email.trim() || senha.length < 6}
+        >
+          {enviando ? "Enviando…" : "Criar conta"}
         </button>
       </div>
 

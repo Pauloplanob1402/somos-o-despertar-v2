@@ -306,7 +306,7 @@ export function ComposeModal() {
           ) : null}
 
           <div className="modal-composer">
-            <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} tamanho={46} />
+            <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} avatarUrl={perfil?.avatar_url} tamanho={46} />
             <div style={{ flex: 1, minWidth: 0 }}>
               {!modoEnquete ? (
                 <textarea

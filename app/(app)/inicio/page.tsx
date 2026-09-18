@@ -30,7 +30,7 @@ export default function InicioPage() {
 
       <div className="composer" onClick={() => abrirComposer()} style={{ cursor: "pointer" }}>
         <div className="composer-topo">
-          <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} tamanho={44} />
+          <Avatar nome={perfil?.nome ?? "Você"} cor={perfil?.cor ?? "#B8663F"} avatarUrl={perfil?.avatar_url} tamanho={44} />
           <textarea
             className="composer-campo"
             placeholder="Compartilhe o que Deus está fazendo em você..."

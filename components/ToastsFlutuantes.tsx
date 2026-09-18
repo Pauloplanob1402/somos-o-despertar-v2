@@ -56,7 +56,7 @@ export function ToastsFlutuantes() {
             router.push(`/mensagens?c=${mensagemRecebida.conversaId}`);
           }}
         >
-          <Avatar nome={mensagemRecebida.autorNome} cor={mensagemRecebida.autorCor} tamanho={40} />
+          <Avatar nome={mensagemRecebida.autorNome} cor={mensagemRecebida.autorCor} avatarUrl={mensagemRecebida.autorAvatarUrl} tamanho={40} />
           <div className="toast-flutuante-texto">
             <b>{mensagemRecebida.autorNome}</b>
             <span>{mensagemRecebida.texto}</span>

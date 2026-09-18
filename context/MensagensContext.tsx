@@ -29,6 +29,7 @@ export interface MensagemRecebidaPopup {
   autorNome: string;
   autorArroba: string | null;
   autorCor: string;
+  autorAvatarUrl: string | null;
   texto: string;
 }
 
@@ -73,6 +74,7 @@ function linhaParaConversaResumo(linha: {
   outro_nome: string | null;
   outro_arroba: string | null;
   outro_cor: string | null;
+  outro_avatar_url: string | null;
   ultima_mensagem: string | null;
   ultima_mensagem_em: string | null;
   ultima_mensagem_autor_id: string | null;
@@ -87,6 +89,7 @@ function linhaParaConversaResumo(linha: {
     outroNome: linha.outro_nome,
     outroArroba: linha.outro_arroba,
     outroCor: linha.outro_cor,
+    outroAvatarUrl: linha.outro_avatar_url,
     ultimaMensagem: linha.ultima_mensagem,
     ultimaMensagemEm: linha.ultima_mensagem_em,
     ultimaMensagemAutorId: linha.ultima_mensagem_autor_id,
@@ -164,7 +167,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
 
           supabase
             .from("perfis")
-            .select("nome, arroba, cor")
+            .select("nome, arroba, cor, avatar_url")
             .eq("id", nova.autor_id)
             .single()
             .then(({ data: autor }) => {
@@ -174,6 +177,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
                 autorNome: autor.nome,
                 autorArroba: autor.arroba,
                 autorCor: autor.cor,
+                autorAvatarUrl: autor.avatar_url,
                 texto: nova.texto ?? (nova.imagem_url ? "📷 Foto" : ""),
               });
             });
@@ -392,7 +396,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       if (!termo.trim() || !user) return [];
       const { data, error } = await supabase
         .from("perfis")
-        .select("id, nome, arroba, cor")
+        .select("id, nome, arroba, cor, avatar_url")
         .ilike("arroba", `%${termo.trim()}%`)
         .neq("id", user.id)
         .limit(8);
@@ -401,7 +405,13 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
         console.warn("[mensagens] falha ao buscar pessoas:", error.message);
         return [];
       }
-      return (data ?? []) as PessoaEncontrada[];
+      return (data ?? []).map((p) => ({
+        id: p.id,
+        nome: p.nome,
+        arroba: p.arroba,
+        cor: p.cor,
+        avatarUrl: p.avatar_url,
+      }));
     },
     [supabase, user]
   );

@@ -32,12 +32,13 @@ interface AuthContextValue {
   ehAnonimo: boolean;
 
   entrarComGoogle: () => Promise<{ erro: string | null }>;
-  enviarLinkPorEmail: (email: string) => Promise<{ erro: string | null }>;
+  enviarLinkPorEmail: (email: string, senha: string) => Promise<{ erro: string | null }>;
   entrarComGoogleDireto: () => Promise<{ erro: string | null }>;
   entrarComEmailExistente: (email: string) => Promise<{ erro: string | null }>;
+  entrarComSenha: (email: string, senha: string) => Promise<{ erro: string | null }>;
   sair: () => Promise<void>;
   atualizarPerfil: (
-    dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio">>
+    dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio" | "avatar_url">>
   ) => Promise<{ erro: string | null }>;
 }
 
@@ -130,8 +131,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   const enviarLinkPorEmail = useCallback(
-    async (email: string) => {
-      const { error } = await supabase.auth.updateUser({ email });
+    async (email: string, senha: string) => {
+      // Define a senha JUNTO com o e-mail: a senha já vale imediatamente
+      // nesta sessão (não precisa confirmar nada pra isso), enquanto o
+      // e-mail passa pelo fluxo de confirmação de segurança de sempre
+      // (o link "Confirm your new email address"). Depois de confirmado,
+      // a pessoa já pode entrar com e-mail + senha em qualquer aparelho.
+      const { error } = await supabase.auth.updateUser(
+        { email, password: senha },
+        { emailRedirectTo: `${window.location.origin}/auth/callback` }
+      );
       return { erro: error?.message ?? null };
     },
     [supabase]
@@ -177,6 +186,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [supabase]
   );
 
+  const entrarComSenha = useCallback(
+    async (email: string, senha: string) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+      if (error?.message?.toLowerCase().includes("invalid login credentials")) {
+        return { erro: "E-mail ou senha incorretos." };
+      }
+      if (error?.message?.toLowerCase().includes("email not confirmed")) {
+        return { erro: "Confirme seu e-mail antes de entrar com senha." };
+      }
+      return { erro: error?.message ?? null };
+    },
+    [supabase]
+  );
+
   const atualizarPerfil = useCallback(
     async (dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio">>) => {
       if (!user) return { erro: "Sem sessão ativa." };
@@ -201,13 +224,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       enviarLinkPorEmail,
       entrarComGoogleDireto,
       entrarComEmailExistente,
+      entrarComSenha,
       sair,
       atualizarPerfil,
     }),
     [
       user, perfil, carregando, ehAnonimo,
       entrarComGoogle, enviarLinkPorEmail,
-      entrarComGoogleDireto, entrarComEmailExistente,
+      entrarComGoogleDireto, entrarComEmailExistente, entrarComSenha,
       sair, atualizarPerfil,
     ]
   );

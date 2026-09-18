@@ -120,7 +120,7 @@ export function ComentariosDoPost({ post }: { post: Post }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {comentarios.map((c) => (
             <div key={c.id} style={{ display: "flex", gap: 10 }}>
-              <AvatarPessoa arroba={c.autorArroba} nome={c.autorNome} cor={c.autorCor} tamanho={32} />
+              <AvatarPessoa arroba={c.autorArroba} nome={c.autorNome} cor={c.autorCor} avatarUrl={c.autorAvatarUrl} tamanho={32} />
               <div>
                 <div style={{ fontSize: 13.5 }}>
                   <LinkPessoa arroba={c.autorArroba}><b>{c.autorNome}</b></LinkPessoa>{" "}

@@ -35,7 +35,15 @@ export function BotaoOracao({ post }: { post: Post }) {
     setCarregando(true);
     const supabase = createClient();
     const { data } = await supabase.rpc("listar_quem_orou", { id_post: post.id, limite: 12 });
-    setPessoas((data as QuemOrou[]) ?? []);
+    setPessoas(
+      (data ?? []).map((p: { id: string; nome: string; arroba: string; cor: string; avatar_url: string | null }) => ({
+        id: p.id,
+        nome: p.nome,
+        arroba: p.arroba,
+        cor: p.cor,
+        avatarUrl: p.avatar_url,
+      }))
+    );
     setCarregando(false);
   }
 
@@ -69,7 +77,7 @@ export function BotaoOracao({ post }: { post: Post }) {
         <div className="oracao-pessoas">
           {pessoas.map((p) => (
             <LinkPessoa key={p.id} arroba={p.arroba} title={p.nome}>
-              <Avatar nome={p.nome} cor={p.cor} tamanho={28} />
+              <Avatar nome={p.nome} cor={p.cor} avatarUrl={p.avatarUrl} tamanho={28} />
             </LinkPessoa>
           ))}
         </div>

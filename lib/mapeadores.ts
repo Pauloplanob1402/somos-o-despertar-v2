@@ -22,6 +22,7 @@ type LinhaPost = {
   autor_nome: string;
   autor_arroba: string;
   autor_cor: string;
+  autor_avatar_url?: string | null;
   mesa_id: string | null;
   mesa_nome: string | null;
   mesa_emoji: string | null;
@@ -57,6 +58,7 @@ export function mapearPost(l: LinhaPost): Post {
     autorNome: l.autor_nome,
     autorArroba: l.autor_arroba,
     autorCor: l.autor_cor,
+    autorAvatarUrl: l.autor_avatar_url ?? null,
     mesaId: l.mesa_id,
     mesaNome: l.mesa_nome,
     mesaEmoji: l.mesa_emoji,
@@ -218,6 +220,7 @@ export function mapearComentario(l: {
   autor_nome: string;
   autor_arroba: string;
   autor_cor: string;
+  autor_avatar_url?: string | null;
   texto: string;
   criado_em: string;
 }): Comentario {
@@ -227,6 +230,7 @@ export function mapearComentario(l: {
     autorNome: l.autor_nome,
     autorArroba: l.autor_arroba,
     autorCor: l.autor_cor,
+    autorAvatarUrl: l.autor_avatar_url ?? null,
     texto: l.texto,
     criadoEm: l.criado_em,
   };

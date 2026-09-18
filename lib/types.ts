@@ -8,6 +8,7 @@ export interface PerfilResumo {
   nome: string;
   arroba: string;
   cor: string;
+  avatarUrl: string | null;
 }
 
 export interface OpcaoEnquete {
@@ -24,6 +25,7 @@ export interface Post {
   autorNome: string;
   autorArroba: string;
   autorCor: string;
+  autorAvatarUrl: string | null;
   mesaId: string | null;
   mesaNome: string | null;
   mesaEmoji: string | null;
@@ -74,6 +76,7 @@ export interface QuemOrou {
   nome: string;
   arroba: string;
   cor: string;
+  avatarUrl: string | null;
 }
 
 export interface Mesa {
@@ -127,6 +130,7 @@ export interface Comentario {
   autorNome: string;
   autorArroba: string;
   autorCor: string;
+  autorAvatarUrl: string | null;
   texto: string;
   criadoEm: string;
 }
@@ -157,6 +161,7 @@ export interface ConversaResumo {
   outroNome: string | null;
   outroArroba: string | null;
   outroCor: string | null;
+  outroAvatarUrl: string | null;
   ultimaMensagem: string | null;
   ultimaMensagemEm: string | null;
   ultimaMensagemAutorId: string | null;

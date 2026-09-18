@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -11,18 +11,25 @@ import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
 import { CompletarCadastro } from "@/components/CompletarCadastro";
 import { PessoasBloqueadas } from "@/components/PessoasBloqueadas";
+import { IconFoto } from "@/components/icons";
+
+const TAMANHO_MAXIMO_AVATAR = 5 * 1024 * 1024; // 5 MB
+const TIPOS_ACEITOS_AVATAR = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 type Aba = "publicacoes" | "mesas";
 
 export default function PerfilPage() {
   const { mesas } = useApp();
-  const { perfil, carregando, atualizarPerfil } = useAuth();
+  const { user, perfil, carregando, atualizarPerfil } = useAuth();
   const [aba, setAba] = useState<Aba>("publicacoes");
   const [editando, setEditando] = useState(false);
   const [nomeForm, setNomeForm] = useState("");
   const [bioForm, setBioForm] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [meusPosts, setMeusPosts] = useState<Post[]>([]);
+  const [enviandoAvatar, setEnviandoAvatar] = useState(false);
+  const [erroAvatar, setErroAvatar] = useState<string | null>(null);
+  const inputAvatarRef = useRef<HTMLInputElement>(null);
 
   const carregarPosts = useCallback(async () => {
     if (!perfil) return;
@@ -81,6 +88,51 @@ export default function PerfilPage() {
     setEditando(false);
   }
 
+  async function handleTrocarFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo || !user) return;
+
+    setErroAvatar(null);
+    if (!TIPOS_ACEITOS_AVATAR.includes(arquivo.type)) {
+      setErroAvatar("Use uma imagem JPG, PNG, WEBP ou GIF.");
+      return;
+    }
+    if (arquivo.size > TAMANHO_MAXIMO_AVATAR) {
+      setErroAvatar("A imagem precisa ter até 5 MB.");
+      return;
+    }
+
+    setEnviandoAvatar(true);
+    try {
+      const supabase = createClient();
+      const extensao = arquivo.name.split(".").pop() || "jpg";
+      // sempre o mesmo nome de arquivo (não leva timestamp) — assim toda
+      // troca de foto SUBSTITUI a anterior no storage em vez de acumular
+      // lixo, e "upsert: true" permite sobrescrever.
+      const caminho = `${user.id}/perfil/avatar.${extensao}`;
+
+      const { error: erroUpload } = await supabase.storage
+        .from("midias")
+        .upload(caminho, arquivo, { contentType: arquivo.type, upsert: true });
+
+      if (erroUpload) {
+        setErroAvatar("Não conseguimos enviar a imagem. Tenta de novo.");
+        return;
+      }
+
+      // cache-bust: sem isso, o navegador (e o CDN) continuam servindo a
+      // foto antiga já cacheada pra essa mesma URL depois do upsert.
+      const base = supabase.storage.from("midias").getPublicUrl(caminho).data.publicUrl;
+      const url = `${base}?v=${Date.now()}`;
+
+      const { erro } = await atualizarPerfil({ avatar_url: url });
+      if (erro) setErroAvatar(erro);
+    } finally {
+      setEnviandoAvatar(false);
+    }
+  }
+
   return (
     <section className="view">
       <div className="topo-secao" style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -93,9 +145,35 @@ export default function PerfilPage() {
       <div className="perfil-banner" style={{ background: "linear-gradient(120deg, #B8663F, #5C4A66)" }} />
       <div className="perfil-cabecalho">
         <div className="perfil-avatar-wrap">
-          <Avatar nome={perfil.nome} cor={perfil.cor} tamanho={92} />
+          <div style={{ position: "relative", width: 92, height: 92 }}>
+            <Avatar nome={perfil.nome} cor={perfil.cor} avatarUrl={perfil.avatar_url} tamanho={92} />
+            <input
+              ref={inputAvatarRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleTrocarFoto}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              aria-label="Trocar foto de perfil"
+              onClick={() => inputAvatarRef.current?.click()}
+              disabled={enviandoAvatar}
+              style={{
+                position: "absolute", bottom: -2, right: -2,
+                width: 30, height: 30, borderRadius: "50%",
+                background: "var(--primaria)", border: "2px solid var(--bg)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "#fff",
+              }}
+            >
+              <IconFoto width={14} height={14} />
+            </button>
+          </div>
           {!editando ? <button className="botao-contorno" onClick={iniciarEdicao}>Editar perfil</button> : null}
         </div>
+        {enviandoAvatar ? <p style={{ fontSize: 13, color: "var(--texto-fraco)" }}>Enviando foto…</p> : null}
+        {erroAvatar ? <p style={{ fontSize: 13, color: "var(--erro)" }}>{erroAvatar}</p> : null}
 
         {!editando ? (
           <>

@@ -81,6 +81,7 @@ export function Sidebar() {
         <Avatar
           nome={perfil?.nome ?? "…"}
           cor={perfil?.cor ?? "#B8663F"}
+          avatarUrl={perfil?.avatar_url}
           tamanho={38}
         />
         <span className="usuario-lateral-nomes">

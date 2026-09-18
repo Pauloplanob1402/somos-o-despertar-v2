@@ -49,16 +49,18 @@ export function AvatarPessoa({
   arroba,
   nome,
   cor,
+  avatarUrl,
   tamanho,
   className,
 }: {
   arroba: string | null | undefined;
   nome: string;
   cor?: string;
+  avatarUrl?: string | null;
   tamanho: number;
   className?: string;
 }) {
-  const avatar = <Avatar nome={nome} cor={cor} tamanho={tamanho} className={className} />;
+  const avatar = <Avatar nome={nome} cor={cor} avatarUrl={avatarUrl} tamanho={tamanho} className={className} />;
   if (!arroba) return avatar;
   return (
     <LinkPessoa arroba={arroba} style={{ flexShrink: 0, display: "block" }}>

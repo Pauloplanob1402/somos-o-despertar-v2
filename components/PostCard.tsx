@@ -91,7 +91,7 @@ export function PostCard({ post }: { post: Post }) {
 
   return (
     <article className={`post ${ehPedido ? "post-pedido" : ""}`} id={`post-${post.id}`}>
-      <AvatarPessoa arroba={post.autorArroba} nome={post.autorNome} cor={post.autorCor} tamanho={46} />
+      <AvatarPessoa arroba={post.autorArroba} nome={post.autorNome} cor={post.autorCor} avatarUrl={post.autorAvatarUrl} tamanho={46} />
       <div className="post-corpo">
         <div className="post-cabecalho">
           <LinkPessoa arroba={post.autorArroba} className="nome">{post.autorNome}</LinkPessoa>
