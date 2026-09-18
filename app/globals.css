@@ -717,6 +717,37 @@ input, textarea { font-family: inherit; }
 .acao-post .curtir-anim { transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); }
 .acao-post.acabou-curtir .curtir-anim { transform: scale(1.35); }
 
+/* Picker de reações (segurar o botão de curtir) -------------------------- */
+.reacao-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: -6px;
+  z-index: 50;
+  display: flex;
+  gap: 2px;
+  background: var(--bg-elevado);
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-pill);
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  animation: reacao-picker-entrada 0.15s ease-out;
+}
+@keyframes reacao-picker-entrada {
+  from { opacity: 0; transform: translateY(6px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.reacao-picker-item {
+  border: none;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.reacao-picker-item:hover { transform: scale(1.25); background: var(--bg); }
+
 /* Enquete --------------------------------------------------------------- */
 .enquete { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .enquete-opcao {

@@ -50,6 +50,10 @@ export interface Post {
   comentariosCount: number;
   oracoesCount: number;
   euCurti: boolean;
+  /** qual reação eu fiz (curtir/oracao/fogo) — só preenchido depois do
+   *  enriquecimento client-side (minhas_reacoes), fica null até lá mesmo
+   *  que euCurti seja true. */
+  minhaReacao: string | null;
   euOrei: boolean;
   minhaOpcaoId: string | null;
   euSalvei: boolean;

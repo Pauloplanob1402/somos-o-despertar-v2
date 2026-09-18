@@ -36,7 +36,7 @@ interface AppContextValue {
   posts: Post[];
   carregandoFeed: boolean;
   recarregarFeed: () => Promise<void>;
-  curtirPost: (id: string) => Promise<void>;
+  curtirPost: (id: string, tipo?: string) => Promise<void>;
   votarEnquete: (postId: string, opcaoId: string) => Promise<void>;
   publicarPost: (dados: {
     texto?: string;
@@ -151,7 +151,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     setPosts(lista);
     setCarregandoFeed(false);
-  }, [supabase]);
+
+    // Enriquecimento à parte: qual reação EU fiz em cada post (❤️/🙏/🔥),
+    // pra já chegar mostrando o emoji certo mesmo depois de recarregar a
+    // página — sem isso, um post que eu já reagi com 🙏 mostraria o
+    // coração genérico até eu reagir de novo nesta sessão.
+    if (user && lista.length > 0) {
+      const { data: reacoes } = await supabase.rpc("minhas_reacoes", {
+        ids_post: lista.map((p) => p.id),
+      });
+      if (reacoes && reacoes.length > 0) {
+        const porPost = new Map<string, string>(reacoes.map((r: { post_id: string; tipo: string }) => [r.post_id, r.tipo]));
+        setPosts((atual) =>
+          atual.map((p) => (porPost.has(p.id) ? { ...p, minhaReacao: porPost.get(p.id)! } : p))
+        );
+      }
+    }
+  }, [supabase, user]);
 
   const recarregarVersiculo = useCallback(async () => {
     const { data } = await supabase.rpc("obter_versiculo_do_dia");
@@ -205,34 +221,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
    * com o banco. Se der erro, desfaz — assim o botão nunca "trava"
    * esperando a rede.
    */
+  /**
+   * Reagir/remover reação: atualiza a tela na hora (otimista) e só então
+   * fala com o banco. Se der erro, desfaz — assim o botão nunca "trava"
+   * esperando a rede.
+   *
+   * tipo omitido = comportamento de sempre (toggle do "curtir" clássico).
+   * Passando um tipo diferente do que já está reagido, troca a reação
+   * (um delete + insert — mantém curtidas_count correto de qualquer jeito,
+   * porque o gatilho conta entrada/saída da tabela, não o tipo).
+   */
   const curtirPost = useCallback(
-    async (id: string) => {
+    async (id: string, tipo: string = "curtir") => {
       if (!user) return;
       const alvo = posts.find((p) => p.id === id);
       if (!alvo) return;
-      const eraCurtido = alvo.euCurti;
+
+      const reacaoAnterior = alvo.euCurti ? (alvo.minhaReacao ?? "curtir") : null;
+      const vaiRemover = reacaoAnterior === tipo;
+      const novaReacao = vaiRemover ? null : tipo;
+      const deltaContagem = (novaReacao ? 1 : 0) - (reacaoAnterior ? 1 : 0);
 
       setPosts((atual) =>
         atual.map((p) =>
           p.id === id
-            ? { ...p, euCurti: !eraCurtido, curtidasCount: p.curtidasCount + (eraCurtido ? -1 : 1) }
+            ? { ...p, euCurti: !!novaReacao, minhaReacao: novaReacao, curtidasCount: p.curtidasCount + deltaContagem }
             : p
         )
       );
 
-      const { error } = eraCurtido
-        ? await supabase.from("curtidas").delete().eq("post_id", id).eq("usuario_id", user.id)
-        : await supabase.from("curtidas").insert({ post_id: id, usuario_id: user.id });
+      // troca de tipo = tira a reação antiga e põe a nova; sem reação
+      // antiga é só insert; virando null é só delete.
+      let erro = null;
+      if (reacaoAnterior) {
+        const { error } = await supabase.from("curtidas").delete().eq("post_id", id).eq("usuario_id", user.id);
+        erro = error;
+      }
+      if (!erro && novaReacao) {
+        const { error } = await supabase.from("curtidas").insert({ post_id: id, usuario_id: user.id, tipo: novaReacao });
+        erro = error;
+      }
 
-      if (error) {
+      if (erro) {
         setPosts((atual) =>
           atual.map((p) =>
             p.id === id
-              ? { ...p, euCurti: eraCurtido, curtidasCount: p.curtidasCount + (eraCurtido ? 1 : -1) }
+              ? { ...p, euCurti: !!reacaoAnterior, minhaReacao: reacaoAnterior, curtidasCount: p.curtidasCount - deltaContagem }
               : p
           )
         );
-        mostrarToast("Não deu pra registrar sua curtida.");
+        mostrarToast("Não deu pra registrar sua reação.");
       }
     },
     [posts, user, supabase, mostrarToast]

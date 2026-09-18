@@ -81,6 +81,7 @@ export function mapearPost(l: LinhaPost): Post {
     comentariosCount: l.comentarios_count,
     oracoesCount: Number(l.oracoes_count ?? 0),
     euCurti: l.eu_curti,
+    minhaReacao: null,
     euOrei: l.eu_orei ?? false,
     minhaOpcaoId: l.minha_opcao_id,
     euSalvei: l.eu_salvei,

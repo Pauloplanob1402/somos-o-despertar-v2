@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp, type MotivoDenuncia } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { tempoRelativo } from "@/lib/mapeadores";
@@ -19,6 +19,12 @@ const MOTIVOS: { valor: MotivoDenuncia; label: string }[] = [
   { valor: "outro", label: "Outro motivo" },
 ];
 
+const REACOES: { tipo: string; emoji: string; label: string }[] = [
+  { tipo: "curtir", emoji: "❤️", label: "Curtir" },
+  { tipo: "oracao", emoji: "🙏", label: "Orando" },
+  { tipo: "fogo", emoji: "🔥", label: "Uau" },
+];
+
 export function PostCard({ post }: { post: Post }) {
   const { curtirPost, votarEnquete, alternarSalvarPost, ocultarPost, bloquearPessoa, denunciarPost, mostrarToast, abrirComposer } = useApp();
   const { perfil } = useAuth();
@@ -29,6 +35,9 @@ export function PostCard({ post }: { post: Post }) {
   const [compartilhado, setCompartilhado] = useState(false);
   const [coracaoFlutuante, setCoracaoFlutuante] = useState(false);
   const [comentariosAbertos, setComentariosAbertos] = useState(false);
+  const [pickerAberto, setPickerAberto] = useState(false);
+  const timerLongPress = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jaAbriuPicker = useRef(false);
 
   const souEuOAutor = perfil?.id === post.autorId;
   const jaVotou = post.minhaOpcaoId !== null;
@@ -36,9 +45,34 @@ export function PostCard({ post }: { post: Post }) {
   const ehTestemunho = post.tipo === "testemunho";
 
   function handleCurtir() {
-    curtirPost(post.id);
+    // toque rápido: alterna a reação atual (ou põe "curtir" por padrão se
+    // ainda não reagiu). Escolher outro emoji é só pelo picker (segurar).
+    curtirPost(post.id, post.euCurti ? (post.minhaReacao ?? "curtir") : "curtir");
     setCurtindoAnim(true);
     setTimeout(() => setCurtindoAnim(false), 250);
+  }
+
+  function handleReagir(tipo: string) {
+    curtirPost(post.id, tipo);
+    setPickerAberto(false);
+    setCurtindoAnim(true);
+    setTimeout(() => setCurtindoAnim(false), 250);
+  }
+
+  function handlePointerDownReacao() {
+    jaAbriuPicker.current = false;
+    timerLongPress.current = setTimeout(() => {
+      jaAbriuPicker.current = true;
+      setPickerAberto(true);
+    }, 350);
+  }
+
+  function handlePointerUpReacao() {
+    if (timerLongPress.current) clearTimeout(timerLongPress.current);
+    // se o picker já abriu (segurou o suficiente), soltar o dedo não faz
+    // nada sozinho — a pessoa escolhe um emoji separadamente. Só um toque
+    // RÁPIDO (sem abrir o picker) dispara o toggle padrão.
+    if (!jaAbriuPicker.current) handleCurtir();
   }
 
   // duplo toque na imagem sempre curte (nunca descurte) e mostra o
@@ -79,6 +113,28 @@ export function PostCard({ post }: { post: Post }) {
 
   function handleCompartilhar() {
     const url = `${window.location.origin}/inicio#post-${post.id}`;
+
+    // Web Share API: no celular abre o menu nativo de compartilhar
+    // (WhatsApp, Instagram, SMS...) — é isso que faz o post circular pra
+    // FORA do app. Só existe em contexto seguro (https) e em navegadores
+    // que suportam; onde não tem, cai pro comportamento antigo de copiar
+    // o link.
+    if (navigator.share) {
+      navigator
+        .share({
+          title: `${post.autorNome} no Despertar`,
+          text: post.texto?.slice(0, 140) || "Vem ver essa publicação no Despertar",
+          url,
+        })
+        .catch((erro: unknown) => {
+          // AbortError = a pessoa só fechou o menu de compartilhar sem
+          // escolher nada — não é uma falha real, não precisa de toast.
+          if ((erro as { name?: string })?.name === "AbortError") return;
+          mostrarToast("Não deu pra compartilhar agora");
+        });
+      return;
+    }
+
     navigator.clipboard?.writeText(url).then(
       () => {
         mostrarToast("Link copiado");
@@ -281,15 +337,45 @@ export function PostCard({ post }: { post: Post }) {
           {/* num pedido de oração o coração sai de cena: o retorno certo
               ali é "estou orando", logo acima — não uma curtida. */}
           {!ehPedido ? (
-            <button
-              className={`acao-post ${post.euCurti ? "curtido" : ""} ${curtindoAnim ? "acabou-curtir" : ""}`}
-              onClick={handleCurtir}
-              aria-label={post.euCurti ? "Descurtir publicação" : "Curtir publicação"}
-              aria-pressed={post.euCurti}
-            >
-              <span className="curtir-anim"><IconCoracao /></span>
-              <span>{post.curtidasCount}</span>
-            </button>
+            <div style={{ position: "relative" }}>
+              {pickerAberto ? (
+                <>
+                  {/* fecha o picker ao tocar em qualquer lugar fora dele */}
+                  <div
+                    onClick={() => setPickerAberto(false)}
+                    style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                  />
+                  <div className="reacao-picker">
+                    {REACOES.map((r) => (
+                      <button
+                        key={r.tipo}
+                        type="button"
+                        className="reacao-picker-item"
+                        aria-label={r.label}
+                        onClick={() => handleReagir(r.tipo)}
+                      >
+                        {r.emoji}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+              <button
+                className={`acao-post ${post.euCurti ? "curtido" : ""} ${curtindoAnim ? "acabou-curtir" : ""}`}
+                onPointerDown={handlePointerDownReacao}
+                onPointerUp={handlePointerUpReacao}
+                onPointerLeave={() => { if (timerLongPress.current) clearTimeout(timerLongPress.current); }}
+                aria-label={post.euCurti ? "Remover reação" : "Reagir (segure para escolher)"}
+                aria-pressed={post.euCurti}
+              >
+                <span className="curtir-anim">
+                  {post.euCurti
+                    ? <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>{REACOES.find((r) => r.tipo === post.minhaReacao)?.emoji ?? "❤️"}</span>
+                    : <IconCoracao />}
+                </span>
+                <span>{post.curtidasCount}</span>
+              </button>
+            </div>
           ) : null}
           <button
             className="acao-post"
