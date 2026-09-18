@@ -5,6 +5,13 @@
 -- dropar antes de recriar (create or replace não permite mudar o formato
 -- de saída de uma função existente).
 --
+-- ⚠️ CORREÇÃO POSTERIOR: listar_feed, listar_posts_do_perfil e
+-- listar_posts_da_mesa abaixo foram recriadas olhando só pra versão
+-- ORIGINAL delas (0012), sem contar as colunas que tinham sido
+-- adicionadas depois (links, versículo, orações, salvos, testemunho —
+-- ver 0016/0018/0021). Isso apagou essas colunas sem querer. A correção
+-- está em 0025_corrige_regressao_links.sql — rode ela também.
+--
 -- Obs.: isso NÃO cobre 100% do app ainda — reflexões do dia, testemunhos,
 -- "Deus respondeu", sugestões de pessoas e a lista de seguidores ainda
 -- não devolvem avatar_url, então continuam mostrando o círculo colorido

@@ -454,17 +454,14 @@ input, textarea { font-family: inherit; }
   font-size: 16.5px;
   line-height: 22px;
   resize: none;
-  min-height: 44px;
+  min-height: 66px; /* cabe as 2 linhas do placeholder por completo, sem cortar */
   color: var(--texto);
   font-family: inherit;
   padding: 11px 0;
-  /* É só o "gatilho" pra abrir o composer de verdade (readOnly, rows=1,
-     altura de uma linha só) — sem isso, em telas estreitas o texto do
-     placeholder quebrava pra uma 2ª linha que ficava cortada pela altura
-     fixa. Trunca com reticências em vez de quebrar. */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* É só o "gatilho" pra abrir o composer de verdade (readOnly) — agora
+     quebra normalmente em vez de truncar, com altura mínima já contando
+     com 2 linhas de texto. */
+  white-space: normal;
 }
 .composer-campo::placeholder { color: var(--texto-fraco); }
 .composer-rodape {
@@ -858,19 +855,11 @@ input, textarea { font-family: inherit; }
 /* Explorar --------------------------------------------------------------- */
 .explorar-categorias {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
   padding: 16px 22px;
   border-bottom: 1px solid var(--borda);
-  /* A fileira já rolava (overflow-x: auto), mas o último chip aparecia
-     cortado bem na borda da tela sem nenhum indício de que dava pra
-     arrastar — parecia quebrado. O mask-image esmaece as duas pontas,
-     deixando claro que tem mais conteúdo pros lados. */
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22px, #000 calc(100% - 28px), transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0, #000 22px, #000 calc(100% - 28px), transparent 100%);
-  scrollbar-width: none;
 }
-.explorar-categorias::-webkit-scrollbar { display: none; }
 .chip-categoria {
   border: 1px solid var(--borda-forte);
   background: var(--bg-elevado);
@@ -879,7 +868,6 @@ input, textarea { font-family: inherit; }
   font-size: 13.5px;
   font-weight: 600;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 .chip-categoria:hover { border-color: var(--primaria); color: var(--primaria); }
 /* Usa --texto/--bg (opostos em ambos os temas) em vez de #fff fixo —
