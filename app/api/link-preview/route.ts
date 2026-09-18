@@ -44,6 +44,48 @@ function ehHostnamePrivado(hostname: string): boolean {
   );
 }
 
+function extrairIdYoutube(url: URL): string | null {
+  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+  if (host === "youtu.be") return url.pathname.slice(1).split("/")[0] || null;
+  if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+    if (url.pathname === "/watch") return url.searchParams.get("v");
+    if (url.pathname.startsWith("/shorts/") || url.pathname.startsWith("/embed/")) {
+      return url.pathname.split("/")[2] || null;
+    }
+  }
+  return null;
+}
+
+/**
+ * O YouTube costuma devolver, pra um fetch de servidor sem cookies/JS, a
+ * página de consentimento de cookies em vez da página real do vídeo —
+ * sem og:image, com título tipo "Antes de continuar - YouTube". O
+ * scraping genérico abaixo então só achava esse ruído. O oEmbed é a API
+ * pública feita justamente pra unfurling de link (é o que WhatsApp,
+ * Twitter etc. usam) e não passa por esse muro de consentimento.
+ */
+async function buscarPreviewYoutube(alvo: URL, controlador: AbortController) {
+  const idVideo = extrairIdYoutube(alvo);
+  if (!idVideo) return null;
+
+  const resposta = await fetch(
+    `https://www.youtube.com/oembed?url=${encodeURIComponent(alvo.toString())}&format=json`,
+    { signal: controlador.signal }
+  );
+  if (!resposta.ok) return null;
+
+  const dados = (await resposta.json()) as { title?: string; author_name?: string };
+  return {
+    url: alvo.toString(),
+    titulo: (dados.title ?? "Vídeo do YouTube").slice(0, 200),
+    descricao: dados.author_name ? `Vídeo de ${dados.author_name}` : null,
+    // maxresdefault nem sempre existe (vídeos antigos/verticais) — hqdefault
+    // é gerado pro YouTube inteiro, sempre existe.
+    imagem: `https://i.ytimg.com/vi/${idVideo}/hqdefault.jpg`,
+    dominio: "youtube.com",
+  };
+}
+
 export async function POST(request: Request) {
   let alvo: URL;
   try {
@@ -63,6 +105,12 @@ export async function POST(request: Request) {
   try {
     const controlador = new AbortController();
     const timeout = setTimeout(() => controlador.abort(), TEMPO_LIMITE_MS);
+
+    const previaYoutube = await buscarPreviewYoutube(alvo, controlador).catch(() => null);
+    if (previaYoutube) {
+      clearTimeout(timeout);
+      return NextResponse.json(previaYoutube);
+    }
 
     const resposta = await fetch(alvo.toString(), {
       signal: controlador.signal,
