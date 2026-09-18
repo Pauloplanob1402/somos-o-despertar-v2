@@ -458,6 +458,13 @@ input, textarea { font-family: inherit; }
   color: var(--texto);
   font-family: inherit;
   padding: 11px 0;
+  /* É só o "gatilho" pra abrir o composer de verdade (readOnly, rows=1,
+     altura de uma linha só) — sem isso, em telas estreitas o texto do
+     placeholder quebrava pra uma 2ª linha que ficava cortada pela altura
+     fixa. Trunca com reticências em vez de quebrar. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .composer-campo::placeholder { color: var(--texto-fraco); }
 .composer-rodape {
@@ -819,7 +826,7 @@ input, textarea { font-family: inherit; }
   flex-shrink: 0;
 }
 .botao-mini:hover { border-color: var(--primaria); color: var(--primaria); }
-.botao-mini.seguindo { background: var(--texto); color: #fff; border-color: var(--texto); }
+.botao-mini.seguindo { background: var(--texto); color: var(--bg); border-color: var(--texto); }
 .ver-todas { color: var(--primaria); font-weight: 700; font-size: 13.5px; display: block; margin-top: 6px; }
 
 .rodape-rail { padding: 0 6px; color: var(--texto-fraco); font-size: 12px; line-height: 1.7; }
@@ -855,7 +862,15 @@ input, textarea { font-family: inherit; }
   overflow-x: auto;
   padding: 16px 22px;
   border-bottom: 1px solid var(--borda);
+  /* A fileira já rolava (overflow-x: auto), mas o último chip aparecia
+     cortado bem na borda da tela sem nenhum indício de que dava pra
+     arrastar — parecia quebrado. O mask-image esmaece as duas pontas,
+     deixando claro que tem mais conteúdo pros lados. */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22px, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 22px, #000 calc(100% - 28px), transparent 100%);
+  scrollbar-width: none;
 }
+.explorar-categorias::-webkit-scrollbar { display: none; }
 .chip-categoria {
   border: 1px solid var(--borda-forte);
   background: var(--bg-elevado);
@@ -867,7 +882,10 @@ input, textarea { font-family: inherit; }
   flex-shrink: 0;
 }
 .chip-categoria:hover { border-color: var(--primaria); color: var(--primaria); }
-.chip-categoria.ativa { background: var(--texto); color: #fff; border-color: var(--texto); }
+/* Usa --texto/--bg (opostos em ambos os temas) em vez de #fff fixo —
+   com #fff, no dark mode --texto já é um creme claro e o texto branco
+   por cima ficava quase invisível (baixíssimo contraste). */
+.chip-categoria.ativa { background: var(--texto); color: var(--bg); border-color: var(--texto); }
 
 .grade-secao { padding: 20px 22px; }
 .grade-secao h3 { font-size: 16px; margin-bottom: 14px; }
@@ -1207,7 +1225,7 @@ input, textarea { font-family: inherit; }
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--texto);
-  color: #fff;
+  color: var(--bg);
   padding: 13px 22px;
   border-radius: var(--raio-pill);
   font-size: 14px;

@@ -139,6 +139,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
           // conversa dela não é a que já está aberta na tela (aí ela
           // chega direto na janela, ver o outro efeito abaixo).
           const nova = payload.new as { conversa_id: string; autor_id: string; texto: string };
+          console.log("[mensagens] INSERT recebido via realtime:", nova);
           if (nova.autor_id === user.id) return;
 
           // toca pra QUALQUER mensagem recebida — com a conversa aberta
@@ -170,7 +171,14 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
         { event: "INSERT", schema: "public", table: "conversa_participantes", filter: `usuario_id=eq.${user.id}` },
         () => recarregarConversas()
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        // Log temporário pra diagnosticar o som de mensagem não tocando.
+        // "SUBSCRIBED" = canal conectado normalmente. Qualquer outra coisa
+        // (CHANNEL_ERROR, TIMED_OUT, CLOSED) explica por que nenhum evento
+        // chega — e nesse caso nenhuma mensagem nova vai disparar o som,
+        // mesmo com a publicação do Supabase e o RLS certos.
+        console.log("[mensagens] status do canal realtime:", status, err ?? "");
+      });
 
     return () => {
       supabase.removeChannel(canal);
