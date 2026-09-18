@@ -110,6 +110,7 @@ export interface PerfilPublico {
   bio: string;
   cor: string;
   avatarUrl: string | null;
+  capaUrl: string | null;
   seguidoresCount: number;
   seguindoCount: number;
   publicacoesCount: number;

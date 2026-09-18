@@ -19,6 +19,7 @@ export interface PerfilSupabase {
   bio: string;
   cor: string;
   avatar_url: string | null;
+  capa_url: string | null;
   seguidores_count: number;
   seguindo_count: number;
   publicacoes_count: number;
@@ -38,7 +39,7 @@ interface AuthContextValue {
   entrarComSenha: (email: string, senha: string) => Promise<{ erro: string | null }>;
   sair: () => Promise<void>;
   atualizarPerfil: (
-    dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio" | "avatar_url">>
+    dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio" | "avatar_url" | "capa_url">>
   ) => Promise<{ erro: string | null }>;
 }
 

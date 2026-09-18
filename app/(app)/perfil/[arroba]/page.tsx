@@ -279,13 +279,17 @@ export default function PerfilPublicoPage() {
 
       <div
         className="perfil-banner"
-        style={{ background: `linear-gradient(120deg, ${perfil.cor}, #5C4A66)` }}
+        style={{
+          background: perfil.capaUrl
+            ? `center / cover no-repeat url(${perfil.capaUrl})`
+            : `linear-gradient(120deg, ${perfil.cor}, #5C4A66)`,
+        }}
       />
 
       <div className="perfil-cabecalho">
         <div className="perfil-avatar-wrap">
           <div className="avatar-wrap">
-            <Avatar nome={perfil.nome} cor={perfil.cor} tamanho={92} />
+            <Avatar nome={perfil.nome} cor={perfil.cor} avatarUrl={perfil.avatarUrl} tamanho={92} />
             {estaOnline ? <span className="bolinha-online" /> : null}
           </div>
 

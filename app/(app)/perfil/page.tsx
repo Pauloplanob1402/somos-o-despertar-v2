@@ -30,6 +30,9 @@ export default function PerfilPage() {
   const [enviandoAvatar, setEnviandoAvatar] = useState(false);
   const [erroAvatar, setErroAvatar] = useState<string | null>(null);
   const inputAvatarRef = useRef<HTMLInputElement>(null);
+  const [enviandoCapa, setEnviandoCapa] = useState(false);
+  const [erroCapa, setErroCapa] = useState<string | null>(null);
+  const inputCapaRef = useRef<HTMLInputElement>(null);
 
   const carregarPosts = useCallback(async () => {
     if (!perfil) return;
@@ -133,6 +136,46 @@ export default function PerfilPage() {
     }
   }
 
+  async function handleTrocarCapa(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo || !user) return;
+
+    setErroCapa(null);
+    if (!TIPOS_ACEITOS_AVATAR.includes(arquivo.type)) {
+      setErroCapa("Use uma imagem JPG, PNG, WEBP ou GIF.");
+      return;
+    }
+    if (arquivo.size > TAMANHO_MAXIMO_AVATAR) {
+      setErroCapa("A imagem precisa ter até 5 MB.");
+      return;
+    }
+
+    setEnviandoCapa(true);
+    try {
+      const supabase = createClient();
+      const extensao = arquivo.name.split(".").pop() || "jpg";
+      const caminho = `${user.id}/perfil/capa.${extensao}`;
+
+      const { error: erroUpload } = await supabase.storage
+        .from("midias")
+        .upload(caminho, arquivo, { contentType: arquivo.type, upsert: true });
+
+      if (erroUpload) {
+        setErroCapa("Não conseguimos enviar a imagem. Tenta de novo.");
+        return;
+      }
+
+      const base = supabase.storage.from("midias").getPublicUrl(caminho).data.publicUrl;
+      const url = `${base}?v=${Date.now()}`;
+
+      const { erro } = await atualizarPerfil({ capa_url: url });
+      if (erro) setErroCapa(erro);
+    } finally {
+      setEnviandoCapa(false);
+    }
+  }
+
   return (
     <section className="view">
       <div className="topo-secao" style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -142,7 +185,40 @@ export default function PerfilPage() {
         </span>
       </div>
 
-      <div className="perfil-banner" style={{ background: "linear-gradient(120deg, #B8663F, #5C4A66)" }} />
+      <div
+        className="perfil-banner"
+        style={{
+          position: "relative",
+          background: perfil.capa_url
+            ? `center / cover no-repeat url(${perfil.capa_url})`
+            : "linear-gradient(120deg, #B8663F, #5C4A66)",
+        }}
+      >
+        <input
+          ref={inputCapaRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={handleTrocarCapa}
+          style={{ display: "none" }}
+        />
+        <button
+          type="button"
+          aria-label="Trocar foto de capa"
+          onClick={() => inputCapaRef.current?.click()}
+          disabled={enviandoCapa}
+          style={{
+            position: "absolute", bottom: 10, right: 12,
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "6px 12px", borderRadius: 999,
+            background: "rgba(0,0,0,0.55)", border: "none",
+            color: "#fff", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          <IconFoto width={13} height={13} />
+          {enviandoCapa ? "Enviando…" : "Editar capa"}
+        </button>
+      </div>
+      {erroCapa ? <p style={{ fontSize: 13, color: "var(--erro)", padding: "6px 22px 0" }}>{erroCapa}</p> : null}
       <div className="perfil-cabecalho">
         <div className="perfil-avatar-wrap">
           <div style={{ position: "relative", width: 92, height: 92 }}>

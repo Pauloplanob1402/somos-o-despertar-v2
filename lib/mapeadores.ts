@@ -159,6 +159,7 @@ export function mapearPerfilPublico(l: {
   bio: string;
   cor: string;
   avatar_url: string | null;
+  capa_url?: string | null;
   seguidores_count: number;
   seguindo_count: number;
   publicacoes_count: number;
@@ -178,6 +179,7 @@ export function mapearPerfilPublico(l: {
     bio: l.bio,
     cor: l.cor,
     avatarUrl: l.avatar_url,
+    capaUrl: l.capa_url ?? null,
     seguidoresCount: Number(l.seguidores_count ?? 0),
     seguindoCount: Number(l.seguindo_count ?? 0),
     publicacoesCount: Number(l.publicacoes_count ?? 0),
