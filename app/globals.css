@@ -432,6 +432,40 @@ input, textarea { font-family: inherit; }
 .topo-secao .sub { color: var(--texto-suave); font-size: 14px; margin-top: 3px; }
 .atalho-oracao { padding: 0 22px; margin-top: 4px; }
 
+.sequencia-badge {
+  margin: 10px 22px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--raio-pill);
+  background: var(--primaria-fundo);
+  color: var(--primaria);
+  font-size: 13px;
+  font-weight: 700;
+}
+.sequencia-badge--alerta { background: var(--bg-elevado); color: var(--texto-fraco); border: 1px dashed var(--borda-forte); }
+
+.feed-abas {
+  display: flex;
+  gap: 6px;
+  padding: 14px 22px 6px;
+  border-bottom: 1px solid var(--borda);
+}
+.feed-aba {
+  border: none;
+  background: none;
+  padding: 8px 4px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--texto-fraco);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  flex: 1;
+  text-align: center;
+}
+.feed-aba.ativa { color: var(--texto); border-bottom-color: var(--primaria); }
+
 .view { padding: 0 0 90px; }
 
 /* Composer ------------------------------------------------------------------*/

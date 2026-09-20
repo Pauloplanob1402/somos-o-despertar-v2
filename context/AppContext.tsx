@@ -38,6 +38,11 @@ interface AppContextValue {
   recarregarFeed: () => Promise<void>;
   curtirPost: (id: string, tipo?: string) => Promise<void>;
   votarEnquete: (postId: string, opcaoId: string) => Promise<void>;
+
+  // feed "Para Você" — descoberta, só gente que ainda não sigo
+  postsParaVoce: Post[];
+  carregandoParaVoce: boolean;
+  carregarParaVoce: () => Promise<void>;
   publicarPost: (dados: {
     texto?: string;
     pergunta?: string;
@@ -99,6 +104,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [carregandoFeed, setCarregandoFeed] = useState(true);
+  const [postsParaVoce, setPostsParaVoce] = useState<Post[]>([]);
+  const [carregandoParaVoce, setCarregandoParaVoce] = useState(false);
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [carregandoMesas, setCarregandoMesas] = useState(true);
   const [emAlta, setEmAlta] = useState<EmAlta[]>([]);
@@ -169,6 +176,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase, user]);
 
+  /** Feed "Para Você" — carregado sob demanda, só quando a aba é aberta. */
+  const carregarParaVoce = useCallback(async () => {
+    setCarregandoParaVoce(true);
+    const { data, error } = await supabase.rpc("listar_para_voce", { limite: 20, deslocamento: 0 });
+    if (error || !data) {
+      setCarregandoParaVoce(false);
+      console.warn("[para-você] falha ao carregar:", error?.message);
+      return;
+    }
+    const lista = (data as Parameters<typeof mapearPost>[0][]).map(mapearPost);
+    setPostsParaVoce(lista);
+    setCarregandoParaVoce(false);
+
+    if (user && lista.length > 0) {
+      const { data: reacoes } = await supabase.rpc("minhas_reacoes", {
+        ids_post: lista.map((p) => p.id),
+      });
+      if (reacoes && reacoes.length > 0) {
+        const porPost = new Map<string, string>(reacoes.map((r: { post_id: string; tipo: string }) => [r.post_id, r.tipo]));
+        setPostsParaVoce((atual) =>
+          atual.map((p) => (porPost.has(p.id) ? { ...p, minhaReacao: porPost.get(p.id)! } : p))
+        );
+      }
+    }
+  }, [supabase, user]);
+
   const recarregarVersiculo = useCallback(async () => {
     const { data } = await supabase.rpc("obter_versiculo_do_dia");
     const linha = Array.isArray(data) ? data[0] : null;
@@ -217,11 +250,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user, recarregarFeed, recarregarMesas, recarregarEmAlta, recarregarVersiculo]);
 
   /**
-   * Curtir/descurtir: atualiza a tela na hora (otimista) e só então fala
-   * com o banco. Se der erro, desfaz — assim o botão nunca "trava"
-   * esperando a rede.
-   */
-  /**
    * Reagir/remover reação: atualiza a tela na hora (otimista) e só então
    * fala com o banco. Se der erro, desfaz — assim o botão nunca "trava"
    * esperando a rede.
@@ -230,11 +258,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
    * Passando um tipo diferente do que já está reagido, troca a reação
    * (um delete + insert — mantém curtidas_count correto de qualquer jeito,
    * porque o gatilho conta entrada/saída da tabela, não o tipo).
+   *
+   * Procura o post tanto no feed principal quanto no "Para Você" — assim
+   * reagir funciona nos dois, não só no feed de sempre.
    */
   const curtirPost = useCallback(
     async (id: string, tipo: string = "curtir") => {
       if (!user) return;
-      const alvo = posts.find((p) => p.id === id);
+      const alvo = posts.find((p) => p.id === id) ?? postsParaVoce.find((p) => p.id === id);
       if (!alvo) return;
 
       const reacaoAnterior = alvo.euCurti ? (alvo.minhaReacao ?? "curtir") : null;
@@ -242,13 +273,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const novaReacao = vaiRemover ? null : tipo;
       const deltaContagem = (novaReacao ? 1 : 0) - (reacaoAnterior ? 1 : 0);
 
-      setPosts((atual) =>
-        atual.map((p) =>
-          p.id === id
-            ? { ...p, euCurti: !!novaReacao, minhaReacao: novaReacao, curtidasCount: p.curtidasCount + deltaContagem }
-            : p
-        )
-      );
+      const aplicar = (p: Post) =>
+        p.id === id
+          ? { ...p, euCurti: !!novaReacao, minhaReacao: novaReacao, curtidasCount: p.curtidasCount + deltaContagem }
+          : p;
+      setPosts((atual) => atual.map(aplicar));
+      setPostsParaVoce((atual) => atual.map(aplicar));
 
       // troca de tipo = tira a reação antiga e põe a nova; sem reação
       // antiga é só insert; virando null é só delete.
@@ -263,17 +293,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       if (erro) {
-        setPosts((atual) =>
-          atual.map((p) =>
-            p.id === id
-              ? { ...p, euCurti: !!reacaoAnterior, minhaReacao: reacaoAnterior, curtidasCount: p.curtidasCount - deltaContagem }
-              : p
-          )
-        );
+        const desfazer = (p: Post) =>
+          p.id === id
+            ? { ...p, euCurti: !!reacaoAnterior, minhaReacao: reacaoAnterior, curtidasCount: p.curtidasCount - deltaContagem }
+            : p;
+        setPosts((atual) => atual.map(desfazer));
+        setPostsParaVoce((atual) => atual.map(desfazer));
         mostrarToast("Não deu pra registrar sua reação.");
       }
     },
-    [posts, user, supabase, mostrarToast]
+    [posts, postsParaVoce, user, supabase, mostrarToast]
   );
 
   const votarEnquete = useCallback(
@@ -524,6 +553,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(
     () => ({
       posts, carregandoFeed, recarregarFeed, curtirPost, votarEnquete, publicarPost,
+      postsParaVoce, carregandoParaVoce, carregarParaVoce,
       orarPorPost,
       versiculo, carregandoVersiculo, recarregarVersiculo,
       mesas, carregandoMesas, alternarParticiparMesa,
@@ -534,6 +564,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }),
     [
       posts, carregandoFeed, recarregarFeed, curtirPost, votarEnquete, publicarPost,
+      postsParaVoce, carregandoParaVoce, carregarParaVoce,
       orarPorPost,
       versiculo, carregandoVersiculo, recarregarVersiculo,
       mesas, carregandoMesas, alternarParticiparMesa,
