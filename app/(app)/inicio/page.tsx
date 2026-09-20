@@ -10,6 +10,8 @@ import { SugestoesDeMesa } from "@/components/SugestoesDeMesa";
 import { VersiculoDoDia } from "@/components/VersiculoDoDia";
 import { FeedSkeleton } from "@/components/FeedSkeleton";
 import { SequenciaBadge } from "@/components/SequenciaBadge";
+import { MilagreDestaque } from "@/components/MilagreDestaque";
+import { PushBanner } from "@/components/PushBanner";
 import { IconFoto, IconVideo, IconEnquete } from "@/components/icons";
 
 type Aba = "seguindo" | "paraVoce";
@@ -38,6 +40,10 @@ export default function InicioPage() {
       </div>
 
       <SequenciaBadge />
+
+      <PushBanner />
+
+      <MilagreDestaque />
 
       <VersiculoDoDia />
 

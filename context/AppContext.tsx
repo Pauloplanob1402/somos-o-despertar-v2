@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { notificarPush } from "@/lib/push";
 import { useAuth } from "./AuthContext";
 import {
   mapearEmAlta,
@@ -300,6 +301,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setPosts((atual) => atual.map(desfazer));
         setPostsParaVoce((atual) => atual.map(desfazer));
         mostrarToast("Não deu pra registrar sua reação.");
+      } else if (novaReacao && alvo.autorId !== user.id) {
+        const emojiPorTipo: Record<string, string> = { curtir: "❤️", oracao: "🙏", fogo: "🔥" };
+        notificarPush({
+          destinatarioId: alvo.autorId,
+          title: `${emojiPorTipo[novaReacao] ?? "❤️"} Alguém reagiu à sua publicação`,
+          body: alvo.texto?.slice(0, 100) || "Toque para ver",
+          url: "/inicio",
+          tag: `reacao-${id}`,
+        });
       }
     },
     [posts, postsParaVoce, user, supabase, mostrarToast]
@@ -415,7 +425,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         mostrarToast("Não deu pra registrar agora.");
         return;
       }
-      if (!jaOrava) mostrarToast("Avisamos que você está orando 🙏");
+      if (!jaOrava) {
+        mostrarToast("Avisamos que você está orando 🙏");
+        if (alvo && alvo.autorId !== user.id) {
+          notificarPush({
+            destinatarioId: alvo.autorId,
+            title: "Alguém está orando por você 🙏",
+            body: alvo.texto?.slice(0, 100) || "Seu pedido de oração",
+            url: "/mural-oracao",
+            tag: `oracao-${id}`,
+          });
+        }
+      }
     },
     [posts, user, supabase, mostrarToast]
   );

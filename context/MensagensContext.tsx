@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./AuthContext";
 import { useApp } from "./AppContext";
 import { tocarSom } from "@/lib/sons";
+import { notificarPush } from "@/lib/push";
 import type { ConversaResumo, MensagemReal, PerfilResumo } from "@/lib/types";
 
 /** resultado da busca por @arroba pra iniciar uma conversa nova */
@@ -98,7 +99,7 @@ function linhaParaConversaResumo(linha: {
 }
 
 export function MensagensProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, perfil } = useAuth();
   const { mostrarToast } = useApp();
   const [supabase] = useState(() => createClient());
 
@@ -335,9 +336,19 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       // a própria inserção já dispara os eventos realtime acima (tanto
       // pra essa janela quanto pra lista de conversas), então não
       // precisa atualizar o estado local aqui manualmente.
+      const conversa = conversas.find((c) => c.conversaId === conversaAtivaId);
+      if (conversa?.tipo === "pessoa" && conversa.outroId) {
+        notificarPush({
+          destinatarioId: conversa.outroId,
+          title: `Nova mensagem de ${perfil?.nome ?? "alguém"}`,
+          body: texto || "📷 Foto",
+          url: `/mensagens?c=${conversaAtivaId}`,
+          tag: `mensagem-${conversaAtivaId}`,
+        });
+      }
       return true;
     },
-    [conversaAtivaId, user, supabase, mostrarToast]
+    [conversaAtivaId, user, perfil, supabase, mostrarToast, conversas]
   );
 
   const enviarMensagem = useCallback(

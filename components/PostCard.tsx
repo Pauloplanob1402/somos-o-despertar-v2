@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useApp, type MotivoDenuncia } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { tempoRelativo } from "@/lib/mapeadores";
@@ -214,6 +215,17 @@ export function PostCard({ post }: { post: Post }) {
               <span className="etiqueta-reflexao">refletindo sobre {post.versiculoReferencia}</span>
             ) : null}
           </div>
+        ) : null}
+
+        {/* pedido que já foi respondido — sem isso, alguém podia continuar
+            orando por algo que Deus já respondeu, sem saber. */}
+        {ehPedido && post.respondidoEm ? (
+          <Link
+            href={`/mural-oracao?filtro=testemunhos${post.testemunhoId ? `#post-${post.testemunhoId}` : ""}`}
+            className="banner-respondido"
+          >
+            🙌 <b>Deus respondeu essa oração.</b> Ver o testemunho →
+          </Link>
         ) : null}
 
         {ehTestemunho && post.pedidoOriginalTexto ? (

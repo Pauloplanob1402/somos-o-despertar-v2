@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { mapearComentario, tempoRelativo } from "@/lib/mapeadores";
+import { notificarPush } from "@/lib/push";
 import type { Comentario, Post } from "@/lib/types";
 import { AvatarPessoa, LinkPessoa } from "./LinkPessoa";
 
@@ -50,11 +51,12 @@ export function ComentariosDoPost({ post }: { post: Post }) {
 
   async function enviar() {
     if (!texto.trim() || !user) return;
+    const textoEnviado = texto.trim();
     setEnviando(true);
     const { error } = await supabase.from("comentarios").insert({
       post_id: post.id,
       autor_id: user.id,
-      texto: texto.trim(),
+      texto: textoEnviado,
     });
     setEnviando(false);
     if (error) {
@@ -64,6 +66,15 @@ export function ComentariosDoPost({ post }: { post: Post }) {
     setTexto("");
     await carregar();
     recarregarFeed();
+    if (post.autorId !== user.id) {
+      notificarPush({
+        destinatarioId: post.autorId,
+        title: "Novo comentário na sua publicação 💬",
+        body: textoEnviado.slice(0, 100),
+        url: "/inicio",
+        tag: `comentario-${post.id}`,
+      });
+    }
   }
 
   async function pedirResumo() {
