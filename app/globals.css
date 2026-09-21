@@ -1717,6 +1717,26 @@ input, textarea { font-family: inherit; }
 }
 .push-banner-acoes { display: flex; gap: 8px; justify-content: flex-end; }
 
+.visitante-banner {
+  padding: 16px 18px;
+  border-radius: var(--raio-lg);
+  background: linear-gradient(135deg, var(--primaria) 0%, var(--primaria-escura) 100%);
+  color: #fff;
+  font-size: 13.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.visitante-banner-texto { display: flex; flex-direction: column; gap: 6px; }
+.visitante-banner-texto strong { font-size: 15px; }
+.visitante-banner-texto span { color: rgba(255,255,255,0.9); line-height: 1.5; }
+.visitante-banner-acoes { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+.visitante-banner-acoes .botao-mini { background: transparent; border-color: rgba(255,255,255,0.4); color: #fff; }
+.visitante-banner-acoes .botao-mini:hover { border-color: #fff; color: #fff; }
+.visitante-banner-acoes .botao-publicar-final { background: #fff; color: var(--primaria-escura); }
+.visitante-banner-acoes .botao-publicar-final:hover { background: rgba(255,255,255,0.9); }
+
 /* "Deus respondeu" — botão no próprio pedido, e a marca de que já foi respondido */
 .botao-deus-respondeu {
   margin-top: 12px;

@@ -1,20 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { IconOlho, IconOlhoFechado } from "@/components/icons";
 
-export default function EntrarPage() {
-  const { entrarComGoogleDireto, entrarComEmailExistente, entrarComSenha, recuperarSenha } = useAuth();
+type Modo = "entrar" | "recuperar" | "criarConta";
+
+const TITULOS: Record<Modo, string> = {
+  entrar: "Que bom te ver de novo.",
+  recuperar: "Vamos recuperar sua senha.",
+  criarConta: "Crie sua conta no Despertar.",
+};
+
+const DESCRICOES: Record<Modo, string> = {
+  entrar: "Entre com a conta que você já reivindicou.",
+  recuperar: "Digite seu e-mail e te mandamos um link pra criar uma senha nova.",
+  criarConta: "Com e-mail e senha, sua jornada fica salva e acessível em qualquer aparelho.",
+};
+
+function BotaoOlho({ mostrar, onClick }: { mostrar: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={mostrar ? "Ocultar senha" : "Mostrar senha"}
+      style={{
+        position: "absolute",
+        right: 10,
+        top: "50%",
+        transform: "translateY(-50%)",
+        background: "none",
+        border: "none",
+        padding: 4,
+        display: "flex",
+        alignItems: "center",
+        color: "rgba(255,255,255,0.55)",
+        cursor: "pointer",
+      }}
+    >
+      {mostrar ? <IconOlhoFechado width={18} height={18} /> : <IconOlho width={18} height={18} />}
+    </button>
+  );
+}
+
+function EntrarPageConteudo() {
+  const {
+    entrarComGoogleDireto,
+    entrarComEmailExistente,
+    entrarComSenha,
+    recuperarSenha,
+    enviarLinkPorEmail,
+  } = useAuth();
+
+  const [modo, setModo] = useState<Modo>("entrar");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [usarSenha, setUsarSenha] = useState(true);
-  const [modoRecuperar, setModoRecuperar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("modo") === "criarConta") setModo("criarConta");
+  }, [searchParams]);
+
+  function mudarModo(novo: Modo) {
+    setModo(novo);
+    setErro(null);
+    setMensagem(null);
+    setSenha("");
+  }
 
   async function handleGoogle() {
     setErro(null);
@@ -55,6 +114,17 @@ export default function EntrarPage() {
     else setMensagem("Te mandamos um link pra você criar uma senha nova — confira seu e-mail.");
   }
 
+  async function handleCriarConta() {
+    if (!email.trim() || senha.length < 6) return;
+    setEnviando(true);
+    setErro(null);
+    setMensagem(null);
+    const { erro } = await enviarLinkPorEmail(email.trim(), senha);
+    setEnviando(false);
+    if (erro) setErro(erro);
+    else setMensagem("Te mandamos um link de confirmação — clica nele pra terminar. Depois já dá pra entrar com e-mail e senha em qualquer aparelho.");
+  }
+
   return (
     <div className="tela-onboarding">
       <div className="onboarding-card">
@@ -63,9 +133,9 @@ export default function EntrarPage() {
         </div>
 
         <div className="onboarding-passo ativa">
-          <h1>Que bom te ver de novo.</h1>
+          <h1>{TITULOS[modo]}</h1>
           <p className="descricao" style={{ marginBottom: 28 }}>
-            Entre com a conta que você já reivindicou.
+            {DESCRICOES[modo]}
           </p>
 
           <button className="botao-primario" style={{ width: "100%", marginBottom: 16 }} onClick={handleGoogle}>
@@ -82,7 +152,8 @@ export default function EntrarPage() {
               placeholder="seu@email.com"
               className="campo-texto campo-texto--escuro"
             />
-            {modoRecuperar ? (
+
+            {modo === "recuperar" ? (
               <button
                 className="botao-contorno"
                 style={{ width: "100%", borderColor: "rgba(255,255,255,0.25)", color: "#fff" }}
@@ -91,7 +162,34 @@ export default function EntrarPage() {
               >
                 {enviando ? "Enviando…" : "Enviar link de recuperação"}
               </button>
-            ) : (
+            ) : null}
+
+            {modo === "criarConta" ? (
+              <>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={mostrarSenha ? "text" : "password"}
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Crie uma senha (mín. 6 caracteres)"
+                    className="campo-texto campo-texto--escuro"
+                    autoComplete="new-password"
+                    style={{ width: "100%", paddingRight: 40 }}
+                  />
+                  <BotaoOlho mostrar={mostrarSenha} onClick={() => setMostrarSenha((v) => !v)} />
+                </div>
+                <button
+                  className="botao-contorno"
+                  style={{ width: "100%", borderColor: "rgba(255,255,255,0.25)", color: "#fff" }}
+                  onClick={handleCriarConta}
+                  disabled={enviando || !email.trim() || senha.length < 6}
+                >
+                  {enviando ? "Criando…" : "Criar conta"}
+                </button>
+              </>
+            ) : null}
+
+            {modo === "entrar" ? (
               <>
                 {usarSenha ? (
                   <div style={{ position: "relative" }}>
@@ -104,26 +202,7 @@ export default function EntrarPage() {
                       autoComplete="current-password"
                       style={{ width: "100%", paddingRight: 40 }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setMostrarSenha((v) => !v)}
-                      aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
-                      style={{
-                        position: "absolute",
-                        right: 10,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        padding: 4,
-                        display: "flex",
-                        alignItems: "center",
-                        color: "rgba(255,255,255,0.55)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {mostrarSenha ? <IconOlhoFechado width={18} height={18} /> : <IconOlho width={18} height={18} />}
-                    </button>
+                    <BotaoOlho mostrar={mostrarSenha} onClick={() => setMostrarSenha((v) => !v)} />
                   </div>
                 ) : null}
                 <button
@@ -135,27 +214,37 @@ export default function EntrarPage() {
                   {enviando ? "Entrando…" : usarSenha ? "Entrar com senha" : "Enviar link de acesso"}
                 </button>
               </>
-            )}
+            ) : null}
 
             <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
-              {!modoRecuperar ? (
+              {modo === "entrar" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => { setUsarSenha((v) => !v); setErro(null); setMensagem(null); }}
+                    style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
+                  >
+                    {usarSenha ? "Prefiro entrar por link no e-mail" : "Prefiro entrar com senha"}
+                  </button>
+                  {usarSenha ? (
+                    <button
+                      type="button"
+                      onClick={() => mudarModo("recuperar")}
+                      style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
+                    >
+                      Esqueci minha senha
+                    </button>
+                  ) : null}
+                </>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => { setUsarSenha((v) => !v); setErro(null); setMensagem(null); }}
+                  onClick={() => mudarModo("entrar")}
                   style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
                 >
-                  {usarSenha ? "Prefiro entrar por link no e-mail" : "Prefiro entrar com senha"}
+                  Voltar
                 </button>
-              ) : null}
-              {usarSenha || modoRecuperar ? (
-                <button
-                  type="button"
-                  onClick={() => { setModoRecuperar((v) => !v); setErro(null); setMensagem(null); }}
-                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
-                >
-                  {modoRecuperar ? "Voltar" : "Esqueci minha senha"}
-                </button>
-              ) : null}
+              )}
             </div>
           </div>
 
@@ -166,14 +255,36 @@ export default function EntrarPage() {
             <p style={{ color: "#E8A0AE", fontSize: 13.5, marginTop: 16 }}>{erro}</p>
           ) : null}
 
-          <p style={{ marginTop: 28, fontSize: 13.5, color: "rgba(255,255,255,0.55)" }}>
-            Ainda não tem conta?{" "}
-            <Link href="/" style={{ color: "#DCAE6C", textDecoration: "underline" }}>
-              Comece por aqui
-            </Link>
-          </p>
+          {modo === "entrar" ? (
+            <div style={{ marginTop: 28, fontSize: 13.5, color: "rgba(255,255,255,0.55)", display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ margin: 0 }}>
+                Ainda não tem conta?{" "}
+                <button
+                  type="button"
+                  onClick={() => mudarModo("criarConta")}
+                  style={{ background: "none", border: "none", padding: 0, color: "#DCAE6C", textDecoration: "underline", cursor: "pointer", font: "inherit" }}
+                >
+                  Criar conta
+                </button>
+              </p>
+              <p style={{ margin: 0 }}>
+                Só quer dar uma olhada antes?{" "}
+                <Link href="/" style={{ color: "#DCAE6C", textDecoration: "underline" }}>
+                  Entrar como visitante
+                </Link>
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EntrarPage() {
+  return (
+    <Suspense fallback={null}>
+      <EntrarPageConteudo />
+    </Suspense>
   );
 }

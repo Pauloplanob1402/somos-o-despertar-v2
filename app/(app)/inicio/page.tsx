@@ -12,6 +12,7 @@ import { FeedSkeleton } from "@/components/FeedSkeleton";
 import { SequenciaBadge } from "@/components/SequenciaBadge";
 import { MilagreDestaque } from "@/components/MilagreDestaque";
 import { PushBanner } from "@/components/PushBanner";
+import { VisitanteBanner } from "@/components/VisitanteBanner";
 import { IconFoto, IconVideo, IconEnquete } from "@/components/icons";
 
 type Aba = "seguindo" | "paraVoce";
@@ -40,6 +41,8 @@ export default function InicioPage() {
       </div>
 
       <SequenciaBadge />
+
+      <VisitanteBanner />
 
       <PushBanner />
 
