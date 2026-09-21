@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { IconOlho, IconOlhoFechado } from "@/components/icons";
 
 export function CompletarCadastro() {
   const { ehAnonimo, entrarComGoogle, enviarLinkPorEmail } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -54,14 +56,37 @@ export function CompletarCadastro() {
           placeholder="seu@email.com"
           className="campo-texto"
         />
-        <input
-          type="password"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          placeholder="Crie uma senha (mín. 6 caracteres)"
-          className="campo-texto"
-          autoComplete="new-password"
-        />
+        <div style={{ position: "relative" }}>
+          <input
+            type={mostrarSenha ? "text" : "password"}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            placeholder="Crie uma senha (mín. 6 caracteres)"
+            className="campo-texto"
+            autoComplete="new-password"
+            style={{ width: "100%", paddingRight: 40 }}
+          />
+          <button
+            type="button"
+            onClick={() => setMostrarSenha((v) => !v)}
+            aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+            style={{
+              position: "absolute",
+              right: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              padding: 4,
+              display: "flex",
+              alignItems: "center",
+              color: "var(--texto-suave)",
+              cursor: "pointer",
+            }}
+          >
+            {mostrarSenha ? <IconOlhoFechado width={18} height={18} /> : <IconOlho width={18} height={18} />}
+          </button>
+        </div>
         <button
           className="botao-mini"
           style={{ width: "100%" }}

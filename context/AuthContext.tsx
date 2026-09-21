@@ -37,6 +37,8 @@ interface AuthContextValue {
   entrarComGoogleDireto: () => Promise<{ erro: string | null }>;
   entrarComEmailExistente: (email: string) => Promise<{ erro: string | null }>;
   entrarComSenha: (email: string, senha: string) => Promise<{ erro: string | null }>;
+  recuperarSenha: (email: string) => Promise<{ erro: string | null }>;
+  redefinirSenha: (novaSenha: string) => Promise<{ erro: string | null }>;
   sair: () => Promise<void>;
   atualizarPerfil: (
     dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio" | "avatar_url" | "capa_url">>
@@ -201,6 +203,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [supabase]
   );
 
+  // ---------------------------------------------------------------------
+  // "Esqueci minha senha": manda um e-mail com link de recuperação. O link
+  // volta pro /auth/callback (troca o "code" por uma sessão de verdade) e
+  // de lá segue pra /redefinir-senha, onde a pessoa escolhe a senha nova
+  // já autenticada por essa sessão temporária de recuperação.
+  // ---------------------------------------------------------------------
+  const recuperarSenha = useCallback(
+    async (email: string) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/redefinir-senha`,
+      });
+      return { erro: error?.message ?? null };
+    },
+    [supabase]
+  );
+
+  const redefinirSenha = useCallback(
+    async (novaSenha: string) => {
+      const { error } = await supabase.auth.updateUser({ password: novaSenha });
+      return { erro: error?.message ?? null };
+    },
+    [supabase]
+  );
+
   const atualizarPerfil = useCallback(
     async (dados: Partial<Pick<PerfilSupabase, "nome" | "arroba" | "bio">>) => {
       if (!user) return { erro: "Sem sessão ativa." };
@@ -226,6 +252,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       entrarComGoogleDireto,
       entrarComEmailExistente,
       entrarComSenha,
+      recuperarSenha,
+      redefinirSenha,
       sair,
       atualizarPerfil,
     }),
@@ -233,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, perfil, carregando, ehAnonimo,
       entrarComGoogle, enviarLinkPorEmail,
       entrarComGoogleDireto, entrarComEmailExistente, entrarComSenha,
+      recuperarSenha, redefinirSenha,
       sair, atualizarPerfil,
     ]
   );
