@@ -105,6 +105,15 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient());
 
   const [conversas, setConversas] = useState<ConversaResumo[]>([]);
+  // espelha `conversas` sem entrar nas deps do useCallback abaixo — assim
+  // selecionarConversa lê sempre o valor mais atual sem PRECISAR mudar de
+  // identidade toda vez que a lista atualiza em segundo plano (o que
+  // aconteceria com frequência e faria o efeito que a chama em
+  // ConversationsView disparar de novo sem parar, piscando "Carregando…").
+  const conversasRef = useRef<ConversaResumo[]>([]);
+  useEffect(() => {
+    conversasRef.current = conversas;
+  }, [conversas]);
   const [carregandoConversas, setCarregandoConversas] = useState(true);
   /** true só durante a sincronização extra quando selecionarConversa recebe
    *  um id que a lista ainda não conhece (conversa recém-criada) — separado
@@ -266,7 +275,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       // avatar de quem está do outro lado — sem isso, a tela mostrava
       // "conversa não encontrada" até dar F5. Assim, atualiza a lista na
       // hora em vez de esperar o próximo refresh manual.
-      if (!conversas.some((c) => c.conversaId === id)) {
+      if (!conversasRef.current.some((c) => c.conversaId === id)) {
         setSincronizandoConversaNova(true);
         recarregarConversas().finally(() => setSincronizandoConversaNova(false));
       }
@@ -277,7 +286,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
         );
       });
     },
-    [carregarMensagens, supabase, recarregarConversas, conversas]
+    [carregarMensagens, supabase, recarregarConversas]
   );
 
   // enquanto a conversa ativa estiver aberta, novas mensagens dela chegam
