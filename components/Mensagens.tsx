@@ -183,7 +183,7 @@ function ConversationList({ onAbrirConversa }: { onAbrirConversa: () => void }) 
 
 function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
   const { user } = useAuth();
-  const { conversas, carregandoConversas, conversaAtivaId, mensagensAtivas, carregandoMensagens, enviarMensagem, enviarImagem, enviandoImagem } = useMensagens();
+  const { conversas, carregandoConversas, sincronizandoConversaNova, conversaAtivaId, mensagensAtivas, carregandoMensagens, enviarMensagem, enviarImagem, enviandoImagem } = useMensagens();
   const { online } = usePresence();
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -238,7 +238,7 @@ function ConversationWindow({ onVoltar }: { onVoltar: () => void }) {
           <IconVoltar />
         </button>
         <div className="mensagens-vazio">
-          {carregandoConversas ? "Carregando conversa…" : "Essa conversa não foi encontrada."}
+          {carregandoConversas || sincronizandoConversaNova ? "Carregando conversa…" : "Essa conversa não foi encontrada."}
         </div>
       </div>
     );

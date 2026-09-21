@@ -37,6 +37,7 @@ export interface MensagemRecebidaPopup {
 interface MensagensContextValue {
   conversas: ConversaResumo[];
   carregandoConversas: boolean;
+  sincronizandoConversaNova: boolean;
 
   conversaAtivaId: string | null;
   mensagensAtivas: MensagemReal[];
@@ -105,6 +106,11 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
 
   const [conversas, setConversas] = useState<ConversaResumo[]>([]);
   const [carregandoConversas, setCarregandoConversas] = useState(true);
+  /** true só durante a sincronização extra quando selecionarConversa recebe
+   *  um id que a lista ainda não conhece (conversa recém-criada) — separado
+   *  de carregandoConversas de propósito, pra não piscar a lista inteira
+   *  toda vez que uma atualização em segundo plano acontece. */
+  const [sincronizandoConversaNova, setSincronizandoConversaNova] = useState(false);
 
   const [conversaAtivaId, setConversaAtivaId] = useState<string | null>(null);
   const [mensagensAtivas, setMensagensAtivas] = useState<MensagemReal[]>([]);
@@ -254,6 +260,16 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       setConversaAtivaId(id);
       carregarMensagens(id);
+      // Se essa conversa ainda não está na lista resumida (ex: acabou de
+      // ser criada agora pelo botão "Mensagem" de um perfil, ou por
+      // iniciarConversaCom), a lista em memória ainda não sabe o nome/
+      // avatar de quem está do outro lado — sem isso, a tela mostrava
+      // "conversa não encontrada" até dar F5. Assim, atualiza a lista na
+      // hora em vez de esperar o próximo refresh manual.
+      if (!conversas.some((c) => c.conversaId === id)) {
+        setSincronizandoConversaNova(true);
+        recarregarConversas().finally(() => setSincronizandoConversaNova(false));
+      }
       supabase.rpc("marcar_conversa_lida", { id_conversa: id }).then(({ error }) => {
         if (error) return; // contador de não-lidas é cosmético — não vale interromper o fluxo por isso
         setConversas((atual) =>
@@ -261,7 +277,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
         );
       });
     },
-    [carregarMensagens, supabase]
+    [carregarMensagens, supabase, recarregarConversas, conversas]
   );
 
   // enquanto a conversa ativa estiver aberta, novas mensagens dela chegam
@@ -450,6 +466,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
     () => ({
       conversas,
       carregandoConversas,
+      sincronizandoConversaNova,
       conversaAtivaId,
       mensagensAtivas,
       carregandoMensagens,
@@ -466,7 +483,7 @@ export function MensagensProvider({ children }: { children: ReactNode }) {
       limparMensagemRecebida,
     }),
     [
-      conversas, carregandoConversas,
+      conversas, carregandoConversas, sincronizandoConversaNova,
       conversaAtivaId, mensagensAtivas, carregandoMensagens,
       telaConversaAberta, abrirTelaConversa, fecharTelaConversa,
       selecionarConversa, enviarMensagem, enviarImagem, enviandoImagem,

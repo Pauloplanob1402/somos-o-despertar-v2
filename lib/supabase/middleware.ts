@@ -40,7 +40,20 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    await supabase.auth.signInAnonymously();
+    // getUser() faz uma chamada de rede pro servidor de auth pra validar
+    // o token — se essa chamada falhar por uma instabilidade passageira
+    // (rede lenta, cold start etc.), ela também retorna sem usuário, e
+    // aí criar uma sessão anônima nova por engano faria a pessoa "perder"
+    // a conta que já tinha. getSession() só lê o cookie local, sem rede:
+    // se JÁ existe alguma sessão salva (mesmo que a validação acima
+    // tenha falhado por instabilidade), não cria uma nova — só cria
+    // quando realmente não há sessão nenhuma guardada no navegador.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      await supabase.auth.signInAnonymously();
+    }
   }
 
   return response;
