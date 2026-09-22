@@ -15,6 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,6 +55,17 @@ export async function updateSession(request: NextRequest) {
     if (!session) {
       await supabase.auth.signInAnonymously();
     }
+  }
+
+  // Quem já tem conta de verdade (não é mais visitante) não precisa ver
+  // a tela de boas-vindas "/" nem a tela de "/entrar" de novo — isso só
+  // adiciona fricção pra quem já passou por esse fluxo. Manda direto
+  // pro feed. Sessões anônimas continuam vendo essas telas normalmente.
+  if (user && !user.is_anonymous && (pathname === "/" || pathname === "/entrar")) {
+    const destino = request.nextUrl.clone();
+    destino.pathname = "/inicio";
+    destino.search = "";
+    return NextResponse.redirect(destino);
   }
 
   return response;
