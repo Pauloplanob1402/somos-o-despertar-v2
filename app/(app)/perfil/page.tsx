@@ -20,7 +20,7 @@ type Aba = "publicacoes" | "mesas";
 
 export default function PerfilPage() {
   const { mesas } = useApp();
-  const { user, perfil, carregando, atualizarPerfil } = useAuth();
+  const { user, perfil, carregando, ehAnonimo, atualizarPerfil, sair } = useAuth();
   const [aba, setAba] = useState<Aba>("publicacoes");
   const [editando, setEditando] = useState(false);
   const [nomeForm, setNomeForm] = useState("");
@@ -246,7 +246,14 @@ export default function PerfilPage() {
               <IconFoto width={14} height={14} />
             </button>
           </div>
-          {!editando ? <button className="botao-contorno" onClick={iniciarEdicao}>Editar perfil</button> : null}
+          {!editando ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="botao-contorno" onClick={iniciarEdicao}>Editar perfil</button>
+              {!ehAnonimo ? (
+                <button className="botao-contorno" onClick={sair}>Sair</button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         {enviandoAvatar ? <p style={{ fontSize: 13, color: "var(--texto-fraco)" }}>Enviando foto…</p> : null}
         {erroAvatar ? <p style={{ fontSize: 13, color: "var(--erro)" }}>{erroAvatar}</p> : null}
