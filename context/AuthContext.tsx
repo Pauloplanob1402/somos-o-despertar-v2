@@ -32,8 +32,15 @@ interface AuthContextValue {
   /** true enquanto a pessoa ainda não "reivindicou" a conta com e-mail ou Google */
   ehAnonimo: boolean;
 
-  entrarComGoogle: () => Promise<{ erro: string | null }>;
-  enviarLinkPorEmail: (email: string, senha: string) => Promise<{ erro: string | null }>;
+  entrarComGoogle: () => Promise<{ erro: string | null; contaJaExiste?: boolean }>;
+  enviarLinkPorEmail: (
+    email: string,
+    senha: string
+  ) => Promise<{ erro: string | null; contaJaExiste?: boolean }>;
+  /** Refaz a checagem de sessão contra o servidor — usado como último recurso
+   *  quando a pessoa confirma o e-mail numa aba/dispositivo diferente e volta
+   *  pra esta aba sem que o refresh automático (ver useEffect de foco) role. */
+  verificarSessaoAgora: () => Promise<void>;
   entrarComGoogleDireto: () => Promise<{ erro: string | null }>;
   entrarComEmailExistente: (email: string) => Promise<{ erro: string | null }>;
   entrarComSenha: (email: string, senha: string) => Promise<{ erro: string | null }>;
@@ -46,6 +53,38 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+/**
+ * Supabase devolve as mensagens de erro em inglês, cheias de jargão
+ * ("Identity is already linked to another user"). Aqui a gente traduz
+ * as mais comuns pra algo que a pessoa realmente entende — o resto
+ * (bem raro) passa direto.
+ */
+function traduzErroAuth(mensagem: string | undefined | null): string {
+  const m = (mensagem ?? "").toLowerCase();
+  if (m.includes("already registered") || m.includes("already been registered")) {
+    return "Esse e-mail já tem uma conta por aqui.";
+  }
+  if (m.includes("identity is already linked") || m.includes("identity already exists")) {
+    return "Essa conta Google já pertence a outra conta do Despertar.";
+  }
+  if (m.includes("password should be at least")) {
+    return "A senha precisa ter pelo menos 6 caracteres.";
+  }
+  if (m.includes("unable to validate email") || m.includes("invalid email")) {
+    return "Esse e-mail não parece válido.";
+  }
+  if (m.includes("email rate limit") || m.includes("rate limit")) {
+    return "Muitas tentativas em pouco tempo. Espera um minuto e tenta de novo.";
+  }
+  if (m.includes("invalid login credentials")) {
+    return "E-mail ou senha incorretos.";
+  }
+  if (m.includes("email not confirmed")) {
+    return "Confirme seu e-mail antes de entrar com senha.";
+  }
+  return mensagem || "Algo deu errado. Tenta de novo em instantes.";
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient());
@@ -117,6 +156,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
+  const verificarSessaoAgora = useCallback(async () => {
+    const {
+      data: { user: usuarioAtual },
+    } = await supabase.auth.getUser();
+    setUser((atual) =>
+      atual?.id === usuarioAtual?.id && atual?.is_anonymous === usuarioAtual?.is_anonymous
+        ? atual
+        : usuarioAtual
+    );
+    if (usuarioAtual) await buscarPerfil(usuarioAtual.id);
+    else setPerfil(null);
+  }, [supabase, buscarPerfil]);
+
+  // ---------------------------------------------------------------------
+  // Quando a pessoa confirma o e-mail (ou entra com Google) numa aba ou
+  // janela diferente da que ela deixou aberta — bem comum: abre o Gmail
+  // numa aba nova, clica no link, e volta pra aba original — essa aba
+  // original não sabe que a sessão mudou até fazer uma chamada nova pro
+  // servidor. Revalida sozinho sempre que a aba volta a ficar visível ou
+  // em foco, pra essa aba "acordar" já mostrando a conta de verdade.
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    function aoVoltarFoco() {
+      if (document.visibilityState === "visible") verificarSessaoAgora();
+    }
+    document.addEventListener("visibilitychange", aoVoltarFoco);
+    window.addEventListener("focus", aoVoltarFoco);
+    return () => {
+      document.removeEventListener("visibilitychange", aoVoltarFoco);
+      window.removeEventListener("focus", aoVoltarFoco);
+    };
+  }, [verificarSessaoAgora]);
+
   // ---------------------------------------------------------------------
   // "Reivindicar" a conta anônima: depois disso, a pessoa consegue entrar
   // de novo em outro aparelho e continuar de onde parou. O id do usuário
@@ -130,7 +202,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
-    return { erro: error?.message ?? null };
+    if (!error) return { erro: null };
+    const m = error.message.toLowerCase();
+    // Essa conta Google já é de outra pessoa no Despertar — não dá pra
+    // "linkar" ela na sessão de visitante atual. Sinaliza isso à parte
+    // do erro genérico pra UI oferecer trocar pra essa conta existente
+    // em vez de só mostrar uma mensagem sem saída.
+    const contaJaExiste =
+      m.includes("identity is already linked") || m.includes("identity already exists");
+    return { erro: traduzErroAuth(error.message), contaJaExiste };
   }, [supabase]);
 
   const enviarLinkPorEmail = useCallback(
@@ -144,7 +224,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { email, password: senha },
         { emailRedirectTo: `${window.location.origin}/auth/callback` }
       );
-      return { erro: error?.message ?? null };
+      if (!error) return { erro: null };
+      const m = error.message.toLowerCase();
+      const contaJaExiste = m.includes("already registered") || m.includes("already been registered");
+      return { erro: traduzErroAuth(error.message), contaJaExiste };
     },
     [supabase]
   );
@@ -184,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error?.message?.toLowerCase().includes("signups not allowed")) {
         return { erro: "Não encontramos uma conta com esse e-mail." };
       }
-      return { erro: error?.message ?? null };
+      return { erro: error ? traduzErroAuth(error.message) : null };
     },
     [supabase]
   );
@@ -192,13 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const entrarComSenha = useCallback(
     async (email: string, senha: string) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
-      if (error?.message?.toLowerCase().includes("invalid login credentials")) {
-        return { erro: "E-mail ou senha incorretos." };
-      }
-      if (error?.message?.toLowerCase().includes("email not confirmed")) {
-        return { erro: "Confirme seu e-mail antes de entrar com senha." };
-      }
-      return { erro: error?.message ?? null };
+      return { erro: error ? traduzErroAuth(error.message) : null };
     },
     [supabase]
   );
@@ -249,6 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ehAnonimo,
       entrarComGoogle,
       enviarLinkPorEmail,
+      verificarSessaoAgora,
       entrarComGoogleDireto,
       entrarComEmailExistente,
       entrarComSenha,
@@ -259,7 +337,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       user, perfil, carregando, ehAnonimo,
-      entrarComGoogle, enviarLinkPorEmail,
+      entrarComGoogle, enviarLinkPorEmail, verificarSessaoAgora,
       entrarComGoogleDireto, entrarComEmailExistente, entrarComSenha,
       recuperarSenha, redefinirSenha,
       sair, atualizarPerfil,

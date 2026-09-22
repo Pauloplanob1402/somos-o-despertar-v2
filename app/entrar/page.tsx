@@ -47,11 +47,13 @@ function BotaoOlho({ mostrar, onClick }: { mostrar: boolean; onClick: () => void
 
 function EntrarPageConteudo() {
   const {
+    entrarComGoogle,
     entrarComGoogleDireto,
     entrarComEmailExistente,
     entrarComSenha,
     recuperarSenha,
     enviarLinkPorEmail,
+    verificarSessaoAgora,
   } = useAuth();
 
   const [modo, setModo] = useState<Modo>("entrar");
@@ -62,10 +64,15 @@ function EntrarPageConteudo() {
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [aguardandoConfirmacao, setAguardandoConfirmacao] = useState(false);
+  const [verificando, setVerificando] = useState(false);
+  const [conflitoGoogle, setConflitoGoogle] = useState(false);
 
   const searchParams = useSearchParams();
   useEffect(() => {
     if (searchParams.get("modo") === "criarConta") setModo("criarConta");
+    const emailNaUrl = searchParams.get("email");
+    if (emailNaUrl) setEmail(emailNaUrl);
   }, [searchParams]);
 
   function mudarModo(novo: Modo) {
@@ -73,12 +80,26 @@ function EntrarPageConteudo() {
     setErro(null);
     setMensagem(null);
     setSenha("");
+    setAguardandoConfirmacao(false);
+    setConflitoGoogle(false);
   }
 
   async function handleGoogle() {
     setErro(null);
-    const { erro } = await entrarComGoogleDireto();
-    if (erro) setErro(erro);
+    setConflitoGoogle(false);
+    // No modo "criarConta" a pessoa geralmente ainda está na sessão de
+    // visitante e quer TRANSFORMAR essa sessão numa conta permanente —
+    // por isso linka o Google na sessão atual em vez de trocar de sessão.
+    // No modo "entrar" ela quer acessar uma conta que já existe (outro
+    // aparelho, ou depois de sair), então troca mesmo de sessão.
+    if (modo === "criarConta") {
+      const { erro, contaJaExiste } = await entrarComGoogle();
+      if (contaJaExiste) setConflitoGoogle(true);
+      else if (erro) setErro(erro);
+    } else {
+      const { erro } = await entrarComGoogleDireto();
+      if (erro) setErro(erro);
+    }
   }
 
   async function handleEntrarComSenha() {
@@ -119,10 +140,47 @@ function EntrarPageConteudo() {
     setEnviando(true);
     setErro(null);
     setMensagem(null);
+    const { erro, contaJaExiste } = await enviarLinkPorEmail(email.trim(), senha);
+    setEnviando(false);
+    if (contaJaExiste) {
+      // Já existe conta com esse e-mail — manda direto pra tela de entrar,
+      // já com o e-mail preenchido, em vez de deixar a pessoa tentando
+      // "criar" algo que já existe.
+      setModo("entrar");
+      setUsarSenha(true);
+      setErro(null);
+      setMensagem("Esse e-mail já tem conta — é só entrar com a senha dele.");
+      return;
+    }
+    if (erro) {
+      setErro(erro);
+      return;
+    }
+    setAguardandoConfirmacao(true);
+  }
+
+  async function handleReenviarConfirmacao() {
+    setEnviando(true);
+    setErro(null);
     const { erro } = await enviarLinkPorEmail(email.trim(), senha);
     setEnviando(false);
     if (erro) setErro(erro);
-    else setMensagem("Te mandamos um link de confirmação — clica nele pra terminar. Depois já dá pra entrar com e-mail e senha em qualquer aparelho.");
+    else setMensagem("Reenviado — confira seu e-mail de novo.");
+  }
+
+  async function handleJaConfirmei() {
+    setVerificando(true);
+    await verificarSessaoAgora();
+    setVerificando(false);
+    // onAuthStateChange/verificarSessaoAgora já atualiza o contexto — se a
+    // confirmação realmente rolou, o resto do app (ver AppShell) tira a
+    // pessoa desta tela sozinho.
+  }
+
+  async function handleUsarContaGoogleExistente() {
+    setErro(null);
+    const { erro } = await entrarComGoogleDireto();
+    if (erro) setErro(erro);
   }
 
   return (
@@ -133,6 +191,74 @@ function EntrarPageConteudo() {
         </div>
 
         <div className="onboarding-passo ativa">
+          {conflitoGoogle ? (
+            <>
+              <h1>Essa conta Google já existe</h1>
+              <p className="descricao" style={{ marginBottom: 28 }}>
+                Já tem uma conta do Despertar usando esse Google. Você pode
+                entrar com ela agora — mas o que você fez aqui como visitante
+                fica nessa sessão temporária, não passa pra ela.
+              </p>
+              <button
+                className="botao-primario"
+                style={{ width: "100%", marginBottom: 12 }}
+                onClick={handleUsarContaGoogleExistente}
+              >
+                Entrar com essa conta Google
+              </button>
+              <button
+                type="button"
+                onClick={() => setConflitoGoogle(false)}
+                style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
+              >
+                Cancelar
+              </button>
+              {erro ? (
+                <p style={{ color: "#E8A0AE", fontSize: 13.5, marginTop: 16 }}>{erro}</p>
+              ) : null}
+            </>
+          ) : aguardandoConfirmacao ? (
+            <>
+              <h1>Confira seu e-mail</h1>
+              <p className="descricao" style={{ marginBottom: 28 }}>
+                Mandamos um link de confirmação para <strong>{email}</strong>.
+                Abra o link nesse mesmo navegador — assim que confirmar, você
+                já entra automaticamente.
+              </p>
+              <button
+                className="botao-primario"
+                style={{ width: "100%", marginBottom: 12 }}
+                onClick={handleJaConfirmei}
+                disabled={verificando}
+              >
+                {verificando ? "Verificando…" : "Já confirmei"}
+              </button>
+              <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+                <button
+                  type="button"
+                  onClick={handleReenviarConfirmacao}
+                  disabled={enviando}
+                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
+                >
+                  {enviando ? "Reenviando…" : "Reenviar e-mail"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAguardandoConfirmacao(false); setSenha(""); setErro(null); setMensagem(null); }}
+                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: 4 }}
+                >
+                  Usar outro e-mail
+                </button>
+              </div>
+              {mensagem ? (
+                <p style={{ color: "#DCAE6C", fontSize: 13.5, marginTop: 16 }}>{mensagem}</p>
+              ) : null}
+              {erro ? (
+                <p style={{ color: "#E8A0AE", fontSize: 13.5, marginTop: 16 }}>{erro}</p>
+              ) : null}
+            </>
+          ) : (
+            <>
           <h1>{TITULOS[modo]}</h1>
           <p className="descricao" style={{ marginBottom: 28 }}>
             {DESCRICOES[modo]}
@@ -275,6 +401,8 @@ function EntrarPageConteudo() {
               </p>
             </div>
           ) : null}
+            </>
+          )}
         </div>
       </div>
     </div>
