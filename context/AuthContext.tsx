@@ -33,6 +33,7 @@ interface AuthContextValue {
   ehAnonimo: boolean;
 
   entrarComGoogle: () => Promise<{ erro: string | null; contaJaExiste?: boolean }>;
+  entrarComFacebook: () => Promise<{ erro: string | null; contaJaExiste?: boolean }>;
   enviarLinkPorEmail: (
     email: string,
     senha: string
@@ -42,6 +43,7 @@ interface AuthContextValue {
    *  pra esta aba sem que o refresh automático (ver useEffect de foco) role. */
   verificarSessaoAgora: () => Promise<void>;
   entrarComGoogleDireto: () => Promise<{ erro: string | null }>;
+  entrarComFacebookDireto: () => Promise<{ erro: string | null }>;
   entrarComEmailExistente: (email: string) => Promise<{ erro: string | null }>;
   entrarComSenha: (email: string, senha: string) => Promise<{ erro: string | null }>;
   recuperarSenha: (email: string) => Promise<{ erro: string | null }>;
@@ -213,6 +215,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { erro: traduzErroAuth(error.message), contaJaExiste };
   }, [supabase]);
 
+  // ---------------------------------------------------------------------
+  // Facebook, preparado no mesmo padrão do Google acima. PRECISA, antes de
+  // usar em produção: (1) criar o app no Meta for Developers e adicionar o
+  // produto "Facebook Login"; (2) no painel do Supabase, Authentication →
+  // Providers → Facebook, ativar e colar o App ID / App Secret de lá; (3)
+  // registrar a Redirect URI que o Supabase mostra nessa tela lá no Meta
+  // for Developers também. Sem isso o Supabase responde com erro de
+  // provider não habilitado quando esta função for chamada.
+  // ---------------------------------------------------------------------
+  const entrarComFacebook = useCallback(async () => {
+    const { error } = await supabase.auth.linkIdentity({
+      provider: "facebook",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (!error) return { erro: null };
+    const m = error.message.toLowerCase();
+    const contaJaExiste =
+      m.includes("identity is already linked") || m.includes("identity already exists");
+    return { erro: traduzErroAuth(error.message), contaJaExiste };
+  }, [supabase]);
+
   const enviarLinkPorEmail = useCallback(
     async (email: string, senha: string) => {
       // Email e senha PRECISAM ir juntos nesta única chamada: o Supabase
@@ -251,6 +276,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const entrarComGoogleDireto = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    return { erro: error?.message ?? null };
+  }, [supabase]);
+
+  const entrarComFacebookDireto = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "facebook",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -328,9 +363,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       carregando,
       ehAnonimo,
       entrarComGoogle,
+      entrarComFacebook,
       enviarLinkPorEmail,
       verificarSessaoAgora,
       entrarComGoogleDireto,
+      entrarComFacebookDireto,
       entrarComEmailExistente,
       entrarComSenha,
       recuperarSenha,
@@ -340,8 +377,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       user, perfil, carregando, ehAnonimo,
-      entrarComGoogle, enviarLinkPorEmail, verificarSessaoAgora,
-      entrarComGoogleDireto, entrarComEmailExistente, entrarComSenha,
+      entrarComGoogle, entrarComFacebook, enviarLinkPorEmail, verificarSessaoAgora,
+      entrarComGoogleDireto, entrarComFacebookDireto, entrarComEmailExistente, entrarComSenha,
       recuperarSenha, redefinirSenha,
       sair, atualizarPerfil,
     ]
