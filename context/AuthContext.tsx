@@ -36,7 +36,7 @@ interface AuthContextValue {
   enviarLinkPorEmail: (
     email: string,
     senha: string
-  ) => Promise<{ erro: string | null; contaJaExiste?: boolean }>;
+  ) => Promise<{ erro: string | null; contaJaExiste?: boolean; emailPendente?: boolean }>;
   /** Refaz a checagem de sessão contra o servidor — usado como último recurso
    *  quando a pessoa confirma o e-mail numa aba/dispositivo diferente e volta
    *  pra esta aba sem que o refresh automático (ver useEffect de foco) role. */
@@ -215,19 +215,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const enviarLinkPorEmail = useCallback(
     async (email: string, senha: string) => {
-      // Define a senha JUNTO com o e-mail: a senha já vale imediatamente
-      // nesta sessão (não precisa confirmar nada pra isso), enquanto o
-      // e-mail passa pelo fluxo de confirmação de segurança de sempre
-      // (o link "Confirm your new email address"). Depois de confirmado,
-      // a pessoa já pode entrar com e-mail + senha em qualquer aparelho.
-      const { error } = await supabase.auth.updateUser(
-        { email, password: senha },
+      // Separado em duas chamadas: a senha vale de imediato nesta sessão e
+      // não depende de e-mail nenhum, então ela vai primeiro — rápida e
+      // sem risco de travar. O e-mail vai depois, numa chamada separada,
+      // porque é ele que dispara (lá no Supabase) o envio do e-mail de
+      // confirmação de forma síncrona — se esse envio travar/demorar
+      // (SMTP lento, limite de envio etc. → 504), só essa segunda
+      // chamada é afetada; a senha já ficou valendo mesmo assim.
+      const { error: erroSenha } = await supabase.auth.updateUser({ password: senha });
+      if (erroSenha) {
+        return { erro: traduzErroAuth(erroSenha.message) };
+      }
+
+      const { error: erroEmail } = await supabase.auth.updateUser(
+        { email },
         { emailRedirectTo: `${window.location.origin}/auth/callback` }
       );
-      if (!error) return { erro: null };
-      const m = error.message.toLowerCase();
+      if (!erroEmail) return { erro: null };
+
+      const m = erroEmail.message.toLowerCase();
       const contaJaExiste = m.includes("already registered") || m.includes("already been registered");
-      return { erro: traduzErroAuth(error.message), contaJaExiste };
+      if (contaJaExiste) {
+        return { erro: traduzErroAuth(erroEmail.message), contaJaExiste: true };
+      }
+
+      // A senha (chamada acima) já foi salva com sucesso — mesmo que o
+      // envio do e-mail tenha travado (504) ou falhado por instabilidade
+      // passageira, não faz sentido barrar a pessoa aqui: ela já pode
+      // seguir pra tela de confirmação e tentar reenviar o e-mail dali.
+      return { erro: null, emailPendente: true };
     },
     [supabase]
   );

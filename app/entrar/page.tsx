@@ -168,7 +168,7 @@ function EntrarPageConteudo() {
     setErro(null);
     setMensagem(null);
     try {
-      const { erro, contaJaExiste } = await enviarLinkPorEmail(email.trim(), senha);
+      const { erro, contaJaExiste, emailPendente } = await enviarLinkPorEmail(email.trim(), senha);
       if (contaJaExiste) {
         // Já existe conta com esse e-mail — manda direto pra tela de entrar,
         // já com o e-mail preenchido, em vez de deixar a pessoa tentando
@@ -184,6 +184,11 @@ function EntrarPageConteudo() {
         return;
       }
       setAguardandoConfirmacao(true);
+      if (emailPendente) {
+        setMensagem(
+          "Sua senha já foi salva. Tivemos uma instabilidade agora pra mandar o e-mail de confirmação — usa o botão \"Reenviar e-mail\" em instantes."
+        );
+      }
     } catch {
       setErro(ERRO_INESPERADO);
     } finally {
@@ -195,9 +200,13 @@ function EntrarPageConteudo() {
     setEnviando(true);
     setErro(null);
     try {
-      const { erro } = await enviarLinkPorEmail(email.trim(), senha);
+      const { erro, emailPendente } = await enviarLinkPorEmail(email.trim(), senha);
       if (erro) setErro(erro);
-      else setMensagem("Reenviado — confira seu e-mail de novo.");
+      else if (emailPendente) {
+        setMensagem("Instabilidade de novo ao mandar o e-mail — tenta mais uma vez em alguns instantes.");
+      } else {
+        setMensagem("Reenviado — confira seu e-mail de novo.");
+      }
     } catch {
       setErro(ERRO_INESPERADO);
     } finally {

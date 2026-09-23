@@ -20,14 +20,17 @@ create index if not exists push_subscriptions_usuario_id_idx on public.push_subs
 
 alter table public.push_subscriptions enable row level security;
 
+drop policy if exists "Cada um só vê as próprias inscrições" on public.push_subscriptions;
 create policy "Cada um só vê as próprias inscrições"
   on public.push_subscriptions for select
   using (auth.uid() = usuario_id);
 
+drop policy if exists "Cada um só cria inscrição pra si mesmo" on public.push_subscriptions;
 create policy "Cada um só cria inscrição pra si mesmo"
   on public.push_subscriptions for insert
   with check (auth.uid() = usuario_id);
 
+drop policy if exists "Cada um só apaga a própria inscrição" on public.push_subscriptions;
 create policy "Cada um só apaga a própria inscrição"
   on public.push_subscriptions for delete
   using (auth.uid() = usuario_id);
