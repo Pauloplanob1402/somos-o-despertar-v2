@@ -273,10 +273,13 @@ function EntrarPageConteudo() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input
               type="email"
+              id="email-entrar"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
               className="campo-texto campo-texto--escuro"
+              autoComplete="email"
             />
 
             {modo === "recuperar" ? (
@@ -295,6 +298,8 @@ function EntrarPageConteudo() {
                 <div style={{ position: "relative" }}>
                   <input
                     type={mostrarSenha ? "text" : "password"}
+                    id="senha-criar-conta"
+                    name="new-password"
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
                     placeholder="Crie uma senha (mín. 6 caracteres)"
@@ -321,6 +326,8 @@ function EntrarPageConteudo() {
                   <div style={{ position: "relative" }}>
                     <input
                       type={mostrarSenha ? "text" : "password"}
+                      id="senha-entrar"
+                      name="current-password"
                       value={senha}
                       onChange={(e) => setSenha(e.target.value)}
                       placeholder="Sua senha"

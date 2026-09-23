@@ -163,14 +163,19 @@ export function CompletarCadastro() {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <input
           type="email"
+          id="email-completar-cadastro"
+          name="email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setEmailJaExiste(false); }}
           placeholder="seu@email.com"
           className="campo-texto"
+          autoComplete="email"
         />
         <div style={{ position: "relative" }}>
           <input
             type={mostrarSenha ? "text" : "password"}
+            id="senha-completar-cadastro"
+            name="new-password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             placeholder="Crie uma senha (mín. 6 caracteres)"
