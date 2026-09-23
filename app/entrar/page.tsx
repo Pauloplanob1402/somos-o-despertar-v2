@@ -92,25 +92,42 @@ function EntrarPageConteudo() {
     // por isso linka o Google na sessão atual em vez de trocar de sessão.
     // No modo "entrar" ela quer acessar uma conta que já existe (outro
     // aparelho, ou depois de sair), então troca mesmo de sessão.
-    if (modo === "criarConta") {
-      const { erro, contaJaExiste } = await entrarComGoogle();
-      if (contaJaExiste) setConflitoGoogle(true);
-      else if (erro) setErro(erro);
-    } else {
-      const { erro } = await entrarComGoogleDireto();
-      if (erro) setErro(erro);
+    try {
+      if (modo === "criarConta") {
+        const { erro, contaJaExiste } = await entrarComGoogle();
+        if (contaJaExiste) setConflitoGoogle(true);
+        else if (erro) setErro(erro);
+      } else {
+        const { erro } = await entrarComGoogleDireto();
+        if (erro) setErro(erro);
+      }
+    } catch {
+      setErro(ERRO_INESPERADO);
     }
   }
+
+  // Mensagem genérica pra quando a chamada nem chega a devolver um erro
+  // "esperado" do Supabase — ela lança uma exceção mesmo (rede caiu,
+  // alguma extensão do navegador bloqueou a requisição, sessão ausente
+  // etc.). Sem isso, o catch ficava sem nada pra mostrar e a pessoa via
+  // só o botão travado sem explicação.
+  const ERRO_INESPERADO =
+    "Não deu pra completar agora — verifica sua conexão (ou desativa bloqueadores de anúncio/rastreamento) e tenta de novo.";
 
   async function handleEntrarComSenha() {
     if (!email.trim() || !senha) return;
     setEnviando(true);
     setErro(null);
     setMensagem(null);
-    const { erro } = await entrarComSenha(email.trim(), senha);
-    setEnviando(false);
-    if (erro) setErro(erro);
-    // sem erro: onAuthStateChange cuida do redirecionamento pro app.
+    try {
+      const { erro } = await entrarComSenha(email.trim(), senha);
+      if (erro) setErro(erro);
+      // sem erro: onAuthStateChange cuida do redirecionamento pro app.
+    } catch {
+      setErro(ERRO_INESPERADO);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   async function handleLinkMagico() {
@@ -118,10 +135,15 @@ function EntrarPageConteudo() {
     setEnviando(true);
     setErro(null);
     setMensagem(null);
-    const { erro } = await entrarComEmailExistente(email.trim());
-    setEnviando(false);
-    if (erro) setErro(erro);
-    else setMensagem("Te mandamos um link de acesso — clica nele pra entrar.");
+    try {
+      const { erro } = await entrarComEmailExistente(email.trim());
+      if (erro) setErro(erro);
+      else setMensagem("Te mandamos um link de acesso — clica nele pra entrar.");
+    } catch {
+      setErro(ERRO_INESPERADO);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   async function handleRecuperarSenha() {
@@ -129,10 +151,15 @@ function EntrarPageConteudo() {
     setEnviando(true);
     setErro(null);
     setMensagem(null);
-    const { erro } = await recuperarSenha(email.trim());
-    setEnviando(false);
-    if (erro) setErro(erro);
-    else setMensagem("Te mandamos um link pra você criar uma senha nova — confira seu e-mail.");
+    try {
+      const { erro } = await recuperarSenha(email.trim());
+      if (erro) setErro(erro);
+      else setMensagem("Te mandamos um link pra você criar uma senha nova — confira seu e-mail.");
+    } catch {
+      setErro(ERRO_INESPERADO);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   async function handleCriarConta() {
@@ -140,47 +167,66 @@ function EntrarPageConteudo() {
     setEnviando(true);
     setErro(null);
     setMensagem(null);
-    const { erro, contaJaExiste } = await enviarLinkPorEmail(email.trim(), senha);
-    setEnviando(false);
-    if (contaJaExiste) {
-      // Já existe conta com esse e-mail — manda direto pra tela de entrar,
-      // já com o e-mail preenchido, em vez de deixar a pessoa tentando
-      // "criar" algo que já existe.
-      setModo("entrar");
-      setUsarSenha(true);
-      setErro(null);
-      setMensagem("Esse e-mail já tem conta — é só entrar com a senha dele.");
-      return;
+    try {
+      const { erro, contaJaExiste } = await enviarLinkPorEmail(email.trim(), senha);
+      if (contaJaExiste) {
+        // Já existe conta com esse e-mail — manda direto pra tela de entrar,
+        // já com o e-mail preenchido, em vez de deixar a pessoa tentando
+        // "criar" algo que já existe.
+        setModo("entrar");
+        setUsarSenha(true);
+        setErro(null);
+        setMensagem("Esse e-mail já tem conta — é só entrar com a senha dele.");
+        return;
+      }
+      if (erro) {
+        setErro(erro);
+        return;
+      }
+      setAguardandoConfirmacao(true);
+    } catch {
+      setErro(ERRO_INESPERADO);
+    } finally {
+      setEnviando(false);
     }
-    if (erro) {
-      setErro(erro);
-      return;
-    }
-    setAguardandoConfirmacao(true);
   }
 
   async function handleReenviarConfirmacao() {
     setEnviando(true);
     setErro(null);
-    const { erro } = await enviarLinkPorEmail(email.trim(), senha);
-    setEnviando(false);
-    if (erro) setErro(erro);
-    else setMensagem("Reenviado — confira seu e-mail de novo.");
+    try {
+      const { erro } = await enviarLinkPorEmail(email.trim(), senha);
+      if (erro) setErro(erro);
+      else setMensagem("Reenviado — confira seu e-mail de novo.");
+    } catch {
+      setErro(ERRO_INESPERADO);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   async function handleJaConfirmei() {
     setVerificando(true);
-    await verificarSessaoAgora();
-    setVerificando(false);
-    // onAuthStateChange/verificarSessaoAgora já atualiza o contexto — se a
-    // confirmação realmente rolou, o resto do app (ver AppShell) tira a
-    // pessoa desta tela sozinho.
+    try {
+      await verificarSessaoAgora();
+      // onAuthStateChange/verificarSessaoAgora já atualiza o contexto — se a
+      // confirmação realmente rolou, o resto do app (ver AppShell) tira a
+      // pessoa desta tela sozinho.
+    } catch {
+      setErro(ERRO_INESPERADO);
+    } finally {
+      setVerificando(false);
+    }
   }
 
   async function handleUsarContaGoogleExistente() {
     setErro(null);
-    const { erro } = await entrarComGoogleDireto();
-    if (erro) setErro(erro);
+    try {
+      const { erro } = await entrarComGoogleDireto();
+      if (erro) setErro(erro);
+    } catch {
+      setErro(ERRO_INESPERADO);
+    }
   }
 
   return (
