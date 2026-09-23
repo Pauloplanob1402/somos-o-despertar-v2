@@ -15,7 +15,7 @@ const TITULOS: Record<Modo, string> = {
 
 const DESCRICOES: Record<Modo, string> = {
   entrar: "Entre com a conta que você já reivindicou.",
-  criarConta: "Continue com Google (ou Facebook, em breve) pra salvar sua jornada e acessar de qualquer aparelho.",
+  criarConta: "Continue com Google ou Facebook pra salvar sua jornada e acessar de qualquer aparelho.",
 };
 
 const NOME_PROVIDER: Record<Provider, string> = {
@@ -133,19 +133,16 @@ function EntrarPageConteudo() {
               </button>
 
               {/*
-                Facebook preparado e funcional no código — só falta habilitar
-                o provider no painel do Supabase (Authentication → Providers
-                → Facebook) com o App ID/Secret do Meta for Developers.
-                Depois disso, é só remover o `disabled` abaixo.
+                Facebook habilitado — provider já configurado no Supabase
+                (Authentication → Providers → Facebook) e no Meta for
+                Developers.
               */}
               <button
                 className="botao-contorno"
-                style={{ width: "100%", borderColor: "rgba(255,255,255,0.25)", color: "#fff", opacity: 0.5, cursor: "not-allowed" }}
+                style={{ width: "100%", borderColor: "rgba(255,255,255,0.25)", color: "#fff" }}
                 onClick={() => handleProvider("facebook")}
-                disabled
-                title="Em breve"
               >
-                Continuar com Facebook (em breve)
+                Continuar com Facebook
               </button>
 
               {erro ? (

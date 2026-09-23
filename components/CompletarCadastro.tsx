@@ -84,8 +84,8 @@ export function CompletarCadastro() {
     <div className="rail-caixa">
       <h3>Salve seu progresso</h3>
       <p style={{ fontSize: 13.5, color: "var(--texto-suave)", marginBottom: 14 }}>
-        Você ainda está numa sessão temporária. Continue com o Google pra não perder nada se
-        trocar de aparelho.
+        Você ainda está numa sessão temporária. Continue com o Google ou Facebook pra não perder
+        nada se trocar de aparelho.
       </p>
 
       <button
@@ -97,19 +97,15 @@ export function CompletarCadastro() {
       </button>
 
       {/*
-        Facebook preparado e funcional no código — só falta habilitar o
-        provider no painel do Supabase (Authentication → Providers →
-        Facebook) com o App ID/Secret do Meta for Developers. Depois disso,
-        é só remover o `disabled` abaixo.
+        Facebook habilitado — provider já configurado no Supabase
+        (Authentication → Providers → Facebook) e no Meta for Developers.
       */}
       <button
         className="botao-contorno"
-        style={{ width: "100%", opacity: 0.5, cursor: "not-allowed" }}
+        style={{ width: "100%" }}
         onClick={() => handleProvider("facebook")}
-        disabled
-        title="Em breve"
       >
-        Continuar com Facebook (em breve)
+        Continuar com Facebook
       </button>
 
       {erro ? (
